@@ -9,7 +9,7 @@ import "../src/FirewallAccess.sol";
 import "../src/examples/ReentrancyVulnerable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import "../src/Firewall.sol";
-import "../src/examples/ReentrancyAttack.sol";
+import {ReentrancyAttack} from "../src/examples/ReentrancyAttack.sol";
 
 error UnsuccessfulTryMul();
 
@@ -66,13 +66,8 @@ contract Reentrancy is Script {
         // uint256 attackerPrivateKey = vm.envUint("ATTACKER_PRIVATE_KEY");
         // vm.startBroadcast(attackerPrivateKey);
 
-        // address reentrancyVulnerableAddress = 
+        // address reentrancyVulnerableAddress = 0xdEADBEeF00000000000000000000000000000000; // TODO: Add address of `ReentrancyVulnerable` contract
         // ReentrancyAttack reentrancyAttack = new ReentrancyAttack(reentrancyVulnerableAddress);
-
-        // // NOTE: `attack()` call should fail
-        // reentrancyAttack.attack{value: 1 ether}();
-        // reentrancyAttack.withdrawFunds();
-
 
 
 
