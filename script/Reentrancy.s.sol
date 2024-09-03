@@ -51,8 +51,8 @@ contract Reentrancy is Script {
 
         Checkpoint memory checkpoint = Checkpoint({
             threshold: threshold,
-            refStart: 0,
-            refEnd: 8,
+            refStart: 0, // not used
+            refEnd: 0, // not used
             activation: 4,
             trustedOrigin: 0
         });
