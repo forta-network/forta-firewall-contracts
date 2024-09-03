@@ -34,31 +34,20 @@ contract Reentrancy is Script {
         );
 
         // `Checkpoint` set up
-        // NOTE: Since the reentrant function takes no arguments,
-        // we are relying on setting its threshold based on the
-        // decimal value of its function selector. Then we are doubling it,
-        // since we want to catch the second instance of it being entered.
         string memory funcSig = "withdraw()";
-        uint32 funcSelectorDecimalValue = uint32(bytes4(keccak256(bytes(funcSig))));
-        uint192 threshold;
-
-        (bool success, uint256 result) = Math.tryMul(funcSelectorDecimalValue, 2);
-        if (success) {
-            threshold = uint192(result);
-        } else {
-            revert UnsuccessfulTryMul();
-        }
+        bytes4 funcSelector = bytes4(keccak256(bytes(funcSig)));
+        uint192 threshold = 2000000000000000000; // 2 ETH
 
         Checkpoint memory checkpoint = Checkpoint({
             threshold: threshold,
-            refStart: 0, // not used
-            refEnd: 0, // not used
+            refStart: 0,    // not used
+            refEnd: 0,      // not used
             activation: 4,
             trustedOrigin: 0
         });
-        reentrancyVulnerable.setCheckpoint(funcSig, checkpoint);
+        reentrancyVulnerable.setCheckpoint(funcSelector, checkpoint);
 
-        reentrancyVulnerable.deposit{value: 5 ether}();
+        // reentrancyVulnerable.deposit{value: 5 ether}();
 
 
 
