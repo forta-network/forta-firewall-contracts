@@ -22,7 +22,7 @@ contract Reentrancy is Script {
         AttestationForwarder _trustedForwarder = new AttestationForwarder();
         SecurityValidator securityValidator = new SecurityValidator(address(_trustedForwarder));
         TrustedAttesters trustedAttesters = new TrustedAttesters();
-        bytes32 attesterControllerId = bytes32(uint256(0x1));                           // TODO: Pass legitimate value
+        bytes32 attesterControllerId = bytes32(uint256(1));                             // Id of Attester Controller deployed for reentrancy demo
         address defaultAdmin = 0xC99E8AB127272119a42e30A88087b0DaA4807aDA;              // Corresponds to `VICTIM_PRIVATE_KEY`
         FirewallAccess firewallAccess = new FirewallAccess(defaultAdmin);
 
@@ -36,13 +36,13 @@ contract Reentrancy is Script {
         // `Checkpoint` set up
         string memory funcSig = "withdraw()";
         bytes4 funcSelector = bytes4(keccak256(bytes(funcSig)));
-        uint192 threshold = 2000000000000000000; // 2 ETH
+        uint192 threshold = 2 ether;
 
         Checkpoint memory checkpoint = Checkpoint({
             threshold: threshold,
             refStart: 0,    // not used
             refEnd: 0,      // not used
-            activation: 4,
+            activation: ACTIVATION_ACCUMULATED_THRESHOLD,
             trustedOrigin: 0
         });
         reentrancyVulnerable.setCheckpoint(funcSelector, checkpoint);
