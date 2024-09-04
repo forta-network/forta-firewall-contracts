@@ -7,8 +7,10 @@ gas_reports_ignore = ["SecurityProxy", "LogicContract"]
 
 [rpc_endpoints]
 deploy = "${DEPLOY_RPC}"
+sepolia = "${ETH_SEPOLIA_RPC_URL}"
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
 
 [etherscan]
 unknown_chain = { key = "${TENDERLY_ACCESS_KEY}", chain = 1, url = "${DEPLOY_RPC}/verify/etherscan" }
+sepolia = { key = "${SEPOLIA_ETHERSCAN_API_KEY}" }
