@@ -2,19 +2,27 @@ const axios = require('axios');
 require('dotenv/config');
 const { ethers } = require('ethers');
 
-const attesterUrl = process.env.ATTESTER_URL; // TODO: Add `ATTESTER_URL` to `.env`
+const attesterUrl = process.env.ATTESTER_URL;
 
 const jsonRpcUrl = process.env.ETH_SEPOLIA_RPC_URL;
+const chainId = 11155111; // Ethereum Sepolia
 const provider = new ethers.JsonRpcProvider(jsonRpcUrl);
 const reentrancyAttacker = new ethers.Wallet(process.env.ATTACKER_PRIVATE_KEY, provider);
 const reentrancyAttackerAddress = reentrancyAttacker.address;
 
-const reentrancyAttackAbi = ["attack()", "withdrawFunds()"];
+const reentrancyAttackAbi = [
+  "function attack() payable",
+  `function attackWithAttestation(
+    (uint256 deadline, bytes32[] executionHashes) calldata attestation,
+    bytes calldata attestationSignature
+  ) public payable`,
+  "function withdrawFunds()"
+];
 
-const reentrancyAttackAddress = process.env.REENTRANCY_ATTACK_CONTRACT; // TODO: Add `REENTRANCY_ATTACK_CONTRACT` to `.env` (need to deploy first)
+const reentrancyAttackAddress = process.env.REENTRANCY_ATTACK_CONTRACT;
 const reentrancyAttackContract = new ethers.Contract(reentrancyAttackAddress, reentrancyAttackAbi);
 
-const attackCall = reentrancyAttackContract.interface.encodeFunctionData("attack", []);
+const attackCall = reentrancyAttackContract.interface.encodeFunctionData("attack");
 
 async function main() {
     try {
@@ -22,7 +30,7 @@ async function main() {
         to: reentrancyAttackAddress,
         data: attackCall,
         gasLimit: 200000,
-        value: ethers.utils.parseEther("1")
+        value: ethers.parseEther("1")
       });
     } catch (err) {
       console.log(`tx really fails without the attestation for 'withdraw' in 'ReentrancyVulnerable': ${err}`);
@@ -33,6 +41,7 @@ async function main() {
         from: reentrancyAttackerAddress,
         to: reentrancyAttackAddress,
         input: attackCall,
+        chainId: chainId,
         
         // Integration testing params:
         disableScreening: true,
