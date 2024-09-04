@@ -8,10 +8,9 @@ contract ReentrancyVulnerable is  ReentrancyVulnerableCore, InternalFirewall {
 
     constructor(
         ISecurityValidator _validator,
-        ITrustedAttesters _trustedAttesters,
         bytes32 _attesterControllerId,
         IFirewallAccess _firewallAccess
-    ) InternalFirewall(_validator, _trustedAttesters, _attesterControllerId, _firewallAccess) {}
+    ) InternalFirewall(_validator, _attesterControllerId, _firewallAccess) {}
 
     function withdraw() public {
         _secureExecution(balances[msg.sender]);
