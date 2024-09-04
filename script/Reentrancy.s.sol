@@ -4,7 +4,6 @@ pragma solidity ^0.8.25;
 import "forge-std/Script.sol";
 import "../src/AttestationForwarder.sol";
 import "../src/SecurityValidator.sol";
-import "../src/TrustedAttesters.sol";
 import "../src/FirewallAccess.sol";
 import "../src/examples/ReentrancyVulnerable.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -21,14 +20,12 @@ contract Reentrancy is Script {
         // Set up `InternalFirewall` constructor args
         AttestationForwarder _trustedForwarder = new AttestationForwarder();
         SecurityValidator securityValidator = new SecurityValidator(address(_trustedForwarder));
-        TrustedAttesters trustedAttesters = new TrustedAttesters();
         bytes32 attesterControllerId = bytes32(uint256(1));                             // Id of Attester Controller deployed for reentrancy demo
         address defaultAdmin = 0xC99E8AB127272119a42e30A88087b0DaA4807aDA;              // Corresponds to `VICTIM_PRIVATE_KEY`
         FirewallAccess firewallAccess = new FirewallAccess(defaultAdmin);
 
         ReentrancyVulnerable reentrancyVulnerable = new ReentrancyVulnerable(
             ISecurityValidator(address(securityValidator)),
-            ITrustedAttesters(address(trustedAttesters)),
             attesterControllerId,
             IFirewallAccess(address(firewallAccess))
         );
@@ -42,8 +39,8 @@ contract Reentrancy is Script {
             threshold: threshold,
             refStart: 0,    // not used
             refEnd: 0,      // not used
-            activation: ACTIVATION_ACCUMULATED_THRESHOLD,
-            trustedOrigin: 0
+            activation: Activation.AccumulatedThreshold,
+            trustedOrigin: false
         });
         reentrancyVulnerable.setCheckpoint(funcSelector, checkpoint);
 
