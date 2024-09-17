@@ -74,15 +74,13 @@ async function executeBenignDepositAndWithdraw() {
       from: reentrancyAttackerAddress,
       to: reentrancyAttackAddress,
       input: withdrawCall,
-      chainId: Number((await provider.getNetwork()).chainId),
-      
-      // Integration testing params:
-      disableScreening: true,
+      chainId: Number((await provider.getNetwork()).chainId)
     };
 
-    // `jsonRpcUrl` is only needed for the sandbox API
+    // `jsonRpcUrl` and `disableScreening` only needed for the sandbox API
     if (attesterUrl.includes("sandbox")) {
       attestationRequestObj.jsonRpcUrl = jsonRpcUrl;
+      attestationRequestObj.disableScreening = true;
     }
     
     const result = await axios.post(attesterUrl,

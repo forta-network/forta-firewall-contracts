@@ -23,17 +23,6 @@ const {
 } = require('./utils');
 
 async function executeMaliciousReentrancy() {
-    await sendTransaction(
-        reentrancyVictim,
-        reentrancyVulnerableAddress,
-        vulnDepositCall,
-        ethers.parseEther("5"),
-        "benign 'deposit()'",
-        "reentrancy victim EOA",
-        reentrancyVictim,
-        provider
-    );
-
     try {
       // Should error out due to lack of attestation
       await sendTransaction(
@@ -57,15 +46,13 @@ async function executeMaliciousReentrancy() {
         to: reentrancyAttackAddress,
         input: attackCall,
         chainId: Number((await provider.getNetwork()).chainId),
-        value: oneEthInHex,
-        
-        // Integration testing params:
-        disableScreening: true,
+        value: oneEthInHex
       };
 
-      // `jsonRpcUrl` is only needed for the sandbox API
+      // `jsonRpcUrl` and `disableScreening` only needed for the sandbox API
       if (attesterUrl.includes("sandbox")) {
         attestationRequestObj.jsonRpcUrl = jsonRpcUrl;
+        attestationRequestObj.disableScreening = true;
       }
 
       attestationRequestResult = await axios.post(attesterUrl,
@@ -136,7 +123,8 @@ async function executeMaliciousReentrancy() {
         }
 
         // transfer ETH from attacker
-        // to victim EOA to reset
+        // to victim EOA, who then
+        // deposits 5 ETH, to reset
         if(maliciousWithdrawFundsSuccessful) {
             await sendTransaction(
                 reentrancyAttacker,
@@ -146,6 +134,17 @@ async function executeMaliciousReentrancy() {
                 "ETH transfer",
                 "reentrancy attacker EOA",
                 reentrancyAttacker,
+                provider
+            );
+
+            await sendTransaction(
+                reentrancyVictim,
+                reentrancyVulnerableAddress,
+                vulnDepositCall,
+                ethers.parseEther("5"),
+                "benign 'deposit()'",
+                "reentrancy victim EOA",
+                reentrancyVictim,
                 provider
             );
         }
@@ -188,15 +187,13 @@ async function executeMaliciousReentrancy() {
               from: reentrancyVictimAddress,
               to: reentrancyVulnerableAddress,
               input: vulnWithdrawCall,
-              chainId: Number((await provider.getNetwork()).chainId),
-              
-              // Integration testing params:
-              disableScreening: true,
+              chainId: Number((await provider.getNetwork()).chainId)
             };
       
-            // `jsonRpcUrl` is only needed for the sandbox API
+            // `jsonRpcUrl` and `disableScreening` only needed for the sandbox API
             if (attesterUrl.includes("sandbox")) {
-              attestationRequestObj.jsonRpcUrl = jsonRpcUrl;
+                attestationRequestObj.jsonRpcUrl = jsonRpcUrl;
+                attestationRequestObj.disableScreening = true;
             }
 
             const result = await axios.post(attesterUrl,
