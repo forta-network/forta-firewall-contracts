@@ -10,7 +10,7 @@ async function simulateTransactionWithCall(from, to, data, value, funcName) {
     await from.call({
       to,
       data,
-      // gasLimit: 200000, // Uncommented lets `ethers` use `estimateGas`
+      gasLimit: 300000, // Commented out to let `ethers` use `estimateGas`
       value
     });
     console.log(`\n${funcName} tx will succeed with the attestation! no eth_call failure.\n`);
@@ -21,7 +21,7 @@ async function sendTransaction(from, to, data, value, funcName, loggedAddrName, 
     const txResult = await from.sendTransaction({
         to,
         data,
-        // gasLimit: 200000, // Uncommented lets `ethers` use `estimateGas`
+        gasLimit: 300000, // Comment out to let `ethers` use `estimateGas`
         value
     });
     await txResult.wait();
