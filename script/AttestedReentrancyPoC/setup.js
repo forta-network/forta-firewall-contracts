@@ -15,7 +15,12 @@ const reentrancyVictim = new ethers.Wallet(process.env.VICTIM_PRIVATE_KEY, provi
 const reentrancyVictimAddress = reentrancyVictim.address;
 const reentrancyVulnerableAbi = [
   "function deposit() payable",
-  "function withdraw() public"
+  "function withdraw() public",
+  `function attestedCall(
+    (uint256 deadline, bytes32[] executionHashes) calldata attestation,
+    bytes calldata attestationSignature,
+    bytes calldata data
+  ) public`
 ];
 const reentrancyVulnerableAddress = process.env.REENTRANCY_VULNERABLE_CONTRACT;
 const reentrancyVulnerableContract = new ethers.Contract(reentrancyVulnerableAddress, reentrancyVulnerableAbi);
