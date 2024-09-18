@@ -3,6 +3,7 @@ const { ethers } = require('ethers');
 const {
     reentrancyVictim,
     reentrancyVictimAddress,
+    reentrancyVulnerableContract,
     reentrancyVulnerableAddress,
     vulnDepositCall,
     reentrancyAttacker,
@@ -18,7 +19,6 @@ const {
     jsonRpcUrl
 } = require('./setup');
 const {
-    simulateTransactionWithCall,
     sendTransaction
 } = require('./utils');
 
@@ -39,8 +39,9 @@ async function executeMaliciousReentrancy() {
       console.log(`\nmalicious 'attack()' transaction failed with: ${err}\n`);
     }
   
-    let attackAttestationRequestSuccessful, attackWithAttestationCall, attestationRequestResult;
+    let attackAttestationRequestSuccessful, attackWithAttestationCall;
     try {
+      // Should error out due to `attackCall` being an exploit transaction
       const attestationRequestObj = {
         from: reentrancyAttackerAddress,
         to: reentrancyAttackAddress,
@@ -55,11 +56,9 @@ async function executeMaliciousReentrancy() {
         attestationRequestObj.disableScreening = true;
       }
 
-      attestationRequestResult = await axios.post(attesterUrl,
+      const attestationRequestResult = await axios.post(attesterUrl,
         attestationRequestObj
       );
-
-      attackAttestationRequestSuccessful = true;
   
       console.log(`\ngot attestation result:`);
       console.log(attestationRequestResult.data);
@@ -70,22 +69,16 @@ async function executeMaliciousReentrancy() {
         [attestation, signature]
       );
 
+      attackAttestationRequestSuccessful = true;
     } catch (err) {
-      console.log(`\nrequest for attestation failed with: ${err}\n\nattestation request result: ${attestationRequestResult}\n`);
+        console.log(`\n'attack()' attestation request failed with: ${err}\n`);
     }
 
     if(attackAttestationRequestSuccessful) {
-      let attackWithAttestationCallSuccessful;
+      // Should not execute due requesting attestation for exploit transaction
+      let attackWithAttestationCallSuccessful, maliciousWithdrawFundsSuccessful
 
       try {
-        await simulateTransactionWithCall(
-            reentrancyAttacker,
-            reentrancyAttackAddress,
-            attackWithAttestationCall,
-            ethers.parseEther("1"),
-            "malicious 'attackWithAttestation()'"
-        );
-
         await sendTransaction(
             reentrancyAttacker,
             reentrancyAttackAddress,
@@ -97,14 +90,12 @@ async function executeMaliciousReentrancy() {
             provider
         );
 
-          attackWithAttestationCallSuccessful = true;
+        attackWithAttestationCallSuccessful = true;
       } catch (err) {
-          console.log(`\n'attackWithAttestation()' tx still fails with the attestation: ${err}\n`);
+        console.log(`\n'attackWithAttestation()' tx still fails with the attestation: ${err}\n`);
       }
 
       if(attackWithAttestationCallSuccessful) {
-        let maliciousWithdrawFundsSuccessful;
-
         try {
             await sendTransaction(
                 reentrancyAttacker,
@@ -121,66 +112,35 @@ async function executeMaliciousReentrancy() {
         } catch (err) {
             console.log(`\nmalicious 'withdrawFunds()' tx fails: ${err}\n`);
         }
+      }
 
-        // transfer ETH from attacker
-        // to victim EOA, who then
-        // deposits 5 ETH, to reset
-        if(maliciousWithdrawFundsSuccessful) {
-            await sendTransaction(
-                reentrancyAttacker,
-                reentrancyVictimAddress,
-                "0x",
-                ethers.parseEther("5"),
-                "ETH transfer",
-                "reentrancy attacker EOA",
-                reentrancyAttacker,
-                provider
-            );
+      // transfer ETH from attacker
+      // to victim EOA, who then
+      // deposits 5 ETH, to reset
+      if(maliciousWithdrawFundsSuccessful) {
+          await sendTransaction(
+              reentrancyAttacker,
+              reentrancyVictimAddress,
+              "0x",
+              ethers.parseEther("5"),
+              "ETH transfer",
+              "reentrancy attacker EOA",
+              reentrancyAttacker,
+              provider
+          );
 
-            await sendTransaction(
-                reentrancyVictim,
-                reentrancyVulnerableAddress,
-                vulnDepositCall,
-                ethers.parseEther("5"),
-                "benign 'deposit()'",
-                "reentrancy victim EOA",
-                reentrancyVictim,
-                provider
-            );
-        }
+          await sendTransaction(
+              reentrancyVictim,
+              reentrancyVulnerableAddress,
+              vulnDepositCall,
+              ethers.parseEther("5"),
+              "benign 'deposit()'",
+              "reentrancy victim EOA",
+              reentrancyVictim,
+              provider
+          );
       }
     } else { // Withdraw ETH from `ReentrancyVulnerable` by Victim EOA
-
-      let vulnWithdrawToBeSuccessful;
-      try {
-        // Should not be successful because lack of attestation
-        await simulateTransactionWithCall(
-            reentrancyVictim,
-            reentrancyVulnerableAddress,
-            vulnWithdrawCall,
-            0,
-            "vulnerable 'withdraw()'"
-        );
-        vulnWithdrawToBeSuccessful = true;
-      } catch (err) {
-        console.log(`vulnerable 'withdraw()' tx fails without the attestation: ${err}`);
-      }
-
-      if(vulnWithdrawToBeSuccessful) {
-        // This block shouldn't execute because lack of attestation,
-        // but included nonetheless
-        await sendTransaction(
-            reentrancyVictim,
-            reentrancyVulnerableAddress,
-            vulnWithdrawCall,
-            0,
-            "vulnerable 'withdraw()'",
-            "reentrancy victim EOA",
-            reentrancyVictim,
-            provider
-        );
-      } else {
-
         let vulnWithdrawAttestationRequestSuccessful, vulnWithdrawCallWithAttestation;
         try {
             const attestationRequestObj = {
@@ -196,34 +156,27 @@ async function executeMaliciousReentrancy() {
                 attestationRequestObj.disableScreening = true;
             }
 
-            const result = await axios.post(attesterUrl,
+            const attestationRequestResult = await axios.post(attesterUrl,
                 attestationRequestObj
             );
 
-            vulnWithdrawAttestationRequestSuccessful = true
+            console.log(`\ngot attestation result:`);
+            console.log(attestationRequestResult.data);
 
-            console.log(`\ngot attestation result:\n${result.data}\n`);
-
-            const { attestation, signature } = result.data;
+            const { attestation, signature } = attestationRequestResult.data;
             // Using `attestedCall()`, like `attackWithAttestation` in the `ReentrancyAttack` contract does.
-            vulnWithdrawCallWithAttestation = reentrancyAttackContract.interface.encodeFunctionData(
+            vulnWithdrawCallWithAttestation = reentrancyVulnerableContract.interface.encodeFunctionData(
                 "attestedCall",
                 [attestation, signature, vulnWithdrawCall]
             );
+
+            vulnWithdrawAttestationRequestSuccessful = true
         } catch (err) {
-            console.log(`\nrequest for attestation failed with:\n${err}\n`);
+            console.log(`\nvulnerable 'withdraw()' attestation request by victim EOA failed with:\n${err}\n`);
         }
 
         if(vulnWithdrawAttestationRequestSuccessful) {
             try {
-                await simulateTransactionWithCall(
-                    reentrancyVictim,
-                    reentrancyVulnerableAddress,
-                    vulnWithdrawCallWithAttestation,
-                    0,
-                    "vulnerable 'withdraw()' with attestation"
-                );
-
                 await sendTransaction(
                     reentrancyVictim,
                     reentrancyVulnerableAddress,
@@ -237,7 +190,18 @@ async function executeMaliciousReentrancy() {
             } catch (err) {
                 console.log(`\nvulnerable 'withdraw()' tx still fails with attestation: ${err}\n`);
             }
-        }
+
+            // Deposit 5 ETH to set up next execution
+            await sendTransaction(
+                reentrancyVictim,
+                reentrancyVulnerableAddress,
+                vulnDepositCall,
+                ethers.parseEther("5"),
+                "benign 'deposit()'",
+                "reentrancy victim EOA",
+                reentrancyVictim,
+                provider
+            );
       }
     }    
 }
