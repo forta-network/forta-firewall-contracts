@@ -13,13 +13,13 @@ const maliciousReentrancy = true;
 async function main() {
     if(benignDepositAndWithdraw) {
       console.log("\n\nExecuting benign deposit and withdrawal from " +
-      "'ReentrancyAttack' contract to 'ReentrancyVulnerable' contract.\n\n");
+      "'ReentrancyAttack' contract to 'ReentrancyVulnerable' contract.\n");
       await executeBenignDepositAndWithdraw();
     }
 
     if(maliciousReentrancy) {
       console.log("\n\nExecuting malicious reentrancy attack from " +
-      "'ReentrancyAttack' contract to 'ReentrancyVulnerable' contract.\n\n");
+      "'ReentrancyAttack' contract to 'ReentrancyVulnerable' contract.\n");
       await executeMaliciousReentrancy();
     }
   }
