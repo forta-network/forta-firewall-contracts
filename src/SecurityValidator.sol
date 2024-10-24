@@ -6,7 +6,7 @@ pragma solidity ^0.8.25;
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import {ERC2771Context} from "@openzeppelin/contracts/metatx/ERC2771Context.sol";
-import {StorageSlot} from "@openzeppelin/contracts/utils/StorageSlot.sol";
+import {TransientSlot} from "@openzeppelin/contracts/utils/TransientSlot.sol";
 import "./interfaces/ISecurityValidator.sol";
 import "./interfaces/Attestation.sol";
 
@@ -26,7 +26,7 @@ struct StoredAttestation {
  * that execution was enabled by an attester.
  */
 contract SecurityValidator is ISecurityValidator, EIP712, ERC2771Context {
-    using StorageSlot for bytes32;
+    using TransientSlot for bytes32;
 
     error AttestationOverwrite();
     error AttestationDeadlineExceeded();
@@ -99,7 +99,7 @@ contract SecurityValidator is ISecurityValidator, EIP712, ERC2771Context {
 
     /// @notice Returns the attester address which attested to the current execution
     function getCurrentAttester() public view returns (address) {
-        return StorageSlot.tload(ATTESTER_SLOT.asAddress());
+        return TransientSlot.tload(ATTESTER_SLOT.asAddress());
     }
 
     /**
@@ -127,7 +127,7 @@ contract SecurityValidator is ISecurityValidator, EIP712, ERC2771Context {
      * that occur during a call
      */
     function executeCheckpoint(bytes32 checkpointHash) public returns (bytes32) {
-        bytes32 executionHash = StorageSlot.tload(HASH_SLOT.asBytes32());
+        bytes32 executionHash = TransientSlot.tload(HASH_SLOT.asBytes32());
         executionHash = executionHashFrom(checkpointHash, msg.sender, executionHash);
 
         /// If there is no actively used attestation and the bypass flag is not used,
@@ -150,15 +150,15 @@ contract SecurityValidator is ISecurityValidator, EIP712, ERC2771Context {
             /// At this point, it is safe to continue with the first execution hash produced above.
         }
 
-        uint256 cacheIndex = StorageSlot.tload(HASH_CACHE_INDEX_SLOT.asUint256());
-        uint256 hashCount = StorageSlot.tload(HASH_COUNT_SLOT.asUint256());
+        uint256 cacheIndex = TransientSlot.tload(HASH_CACHE_INDEX_SLOT.asUint256());
+        uint256 hashCount = TransientSlot.tload(HASH_COUNT_SLOT.asUint256());
         /// Current execution should not try to execute more checkpoints than attested to.
         if (!bypassed && cacheIndex >= hashCount) {
             revert HashCountExceeded(cacheIndex);
         }
 
         bytes32 cachedHashSlot = bytes32(cacheIndex + HASH_CACHE_START_SLOT);
-        bytes32 cachedHash = StorageSlot.tload(cachedHashSlot.asBytes32());
+        bytes32 cachedHash = TransientSlot.tload(cachedHashSlot.asBytes32());
         /// Computed hash should match with the hash that was attested to.
         if (!bypassed && executionHash != cachedHash) {
             revert InvalidExecutionHash(address(this), cachedHash, executionHash);
@@ -167,8 +167,8 @@ contract SecurityValidator is ISecurityValidator, EIP712, ERC2771Context {
         /// Point to the next hash from the attestation and store the latest computed
         /// hash along with the new index.
         cacheIndex++;
-        StorageSlot.tstore(HASH_SLOT.asBytes32(), executionHash);
-        StorageSlot.tstore(HASH_CACHE_INDEX_SLOT.asUint256(), cacheIndex);
+        TransientSlot.tstore(HASH_SLOT.asBytes32(), executionHash);
+        TransientSlot.tstore(HASH_CACHE_INDEX_SLOT.asUint256(), cacheIndex);
 
         /// Expose the execution hash in the call output which is visible from the trace.
         return executionHash;
@@ -189,17 +189,17 @@ contract SecurityValidator is ISecurityValidator, EIP712, ERC2771Context {
 
         /// Initialize and empty transient storage.
         uint256 hashCount = attestation.executionHashes.length;
-        StorageSlot.tstore(ATTESTER_SLOT.asAddress(), attester);
-        StorageSlot.tstore(HASH_SLOT.asBytes32(), 0);
-        StorageSlot.tstore(HASH_COUNT_SLOT.asUint256(), hashCount);
-        StorageSlot.tstore(HASH_CACHE_INDEX_SLOT.asUint256(), 0);
+        TransientSlot.tstore(ATTESTER_SLOT.asAddress(), attester);
+        TransientSlot.tstore(HASH_SLOT.asBytes32(), 0);
+        TransientSlot.tstore(HASH_COUNT_SLOT.asUint256(), hashCount);
+        TransientSlot.tstore(HASH_CACHE_INDEX_SLOT.asUint256(), 0);
 
         /// Store all execution hashes.
         uint256 len = attestation.executionHashes.length;
         for (uint256 i = 0; i < len; i++) {
             bytes32 execHash = attestation.executionHashes[i];
             bytes32 currIndex = bytes32(HASH_CACHE_START_SLOT + i);
-            StorageSlot.tstore(currIndex.asBytes32(), execHash);
+            TransientSlot.tstore(currIndex.asBytes32(), execHash);
         }
     }
 
@@ -211,8 +211,8 @@ contract SecurityValidator is ISecurityValidator, EIP712, ERC2771Context {
     }
 
     function _idleOrDone() internal view returns (bool) {
-        uint256 cacheIndex = StorageSlot.tload(HASH_CACHE_INDEX_SLOT.asUint256());
-        uint256 hashCount = StorageSlot.tload(HASH_COUNT_SLOT.asUint256());
+        uint256 cacheIndex = TransientSlot.tload(HASH_CACHE_INDEX_SLOT.asUint256());
+        uint256 hashCount = TransientSlot.tload(HASH_COUNT_SLOT.asUint256());
         return cacheIndex >= hashCount;
     }
 

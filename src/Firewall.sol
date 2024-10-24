@@ -5,6 +5,7 @@ pragma solidity ^0.8.25;
 
 import {Proxy} from "@openzeppelin/contracts/proxy/Proxy.sol";
 import {StorageSlot} from "@openzeppelin/contracts/utils/StorageSlot.sol";
+import {TransientSlot} from "@openzeppelin/contracts/utils/TransientSlot.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {FirewallPermissions} from "./FirewallPermissions.sol";
 import {Quantization} from "./Quantization.sol";
@@ -24,6 +25,7 @@ import "./interfaces/IAttesterInfo.sol";
  */
 abstract contract Firewall is IFirewall, IAttesterInfo, FirewallPermissions {
     using StorageSlot for bytes32;
+    using TransientSlot for bytes32;
     using Quantization for uint256;
 
     error InvalidActivationType();
@@ -238,9 +240,9 @@ abstract contract Firewall is IFirewall, IAttesterInfo, FirewallPermissions {
         }
         /// Continue with the "accumulated threshold" logic.
         bytes32 slot = keccak256(abi.encode(selector, msg.sender));
-        uint256 acc = StorageSlot.tload(slot.asUint256());
+        uint256 acc = TransientSlot.tload(slot.asUint256());
         acc += ref;
-        StorageSlot.tstore(slot.asUint256(), acc);
+        TransientSlot.tstore(slot.asUint256(), acc);
         return (ref, acc >= checkpoint.threshold);
     }
 
