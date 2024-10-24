@@ -4,6 +4,7 @@
 pragma solidity ^0.8.25;
 
 import "./interfaces/IFirewallAccess.sol";
+import "./interfaces/ITrustedAttesters.sol";
 
 /**
  * @notice Simplifies interactions with a firewall access contract.
@@ -11,6 +12,7 @@ import "./interfaces/IFirewallAccess.sol";
 abstract contract FirewallPermissions {
     struct FirewallPermissionsStorage {
         IFirewallAccess firewallAccess;
+        ITrustedAttesters trustedAttesters;
     }
 
     /// @custom:storage-location erc7201:forta.FirewallPermissions.storage
@@ -55,6 +57,14 @@ abstract contract FirewallPermissions {
         return _getFirewallPermissionsStorage().firewallAccess;
     }
 
+    function _updateTrustedAttesters(ITrustedAttesters trustedAttesters) internal {
+        _getFirewallPermissionsStorage().trustedAttesters = trustedAttesters;
+    }
+
+    function _getTrustedAttesters() internal view returns (ITrustedAttesters) {
+        return _getFirewallPermissionsStorage().trustedAttesters;
+    }
+
     function _getFirewallPermissionsStorage() private pure returns (FirewallPermissionsStorage storage $) {
         assembly {
             $.slot := STORAGE_SLOT
@@ -62,6 +72,10 @@ abstract contract FirewallPermissions {
     }
 
     function _isTrustedAttester(address attester) internal view returns (bool) {
-        return _getFirewallPermissionsStorage().firewallAccess.isTrustedAttester(attester);
+        FirewallPermissionsStorage storage $ = _getFirewallPermissionsStorage();
+        if (address($.trustedAttesters) != address(0)) {
+            return $.trustedAttesters.isTrustedAttester(attester);
+        }
+        return $.firewallAccess.isTrustedAttester(attester);
     }
 }

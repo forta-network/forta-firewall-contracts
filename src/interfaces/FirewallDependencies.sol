@@ -6,3 +6,4 @@ pragma solidity ^0.8.25;
 import "./ISecurityValidator.sol";
 import "./ICheckpointHook.sol";
 import "./IFirewallAccess.sol";
+import "./ITrustedAttesters.sol";

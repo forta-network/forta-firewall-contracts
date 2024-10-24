@@ -7,9 +7,11 @@ import "./ISecurityValidator.sol";
 import "./IFirewallAccess.sol";
 import "./Checkpoint.sol";
 import "./ICheckpointHook.sol";
+import "./ITrustedAttesters.sol";
 
 interface IFirewall {
     event SecurityConfigUpdated(ISecurityValidator indexed validator, IFirewallAccess indexed firewallAccess);
+    event TrustedAttestersUpdated(ITrustedAttesters indexed trustedAttesters);
     event SupportsTrustedOrigin(address indexed firewall);
     event CheckpointUpdated(bytes4 selector, Checkpoint checkpoint);
 
@@ -29,6 +31,8 @@ interface IFirewall {
             bytes32 _attesterControllerId,
             IFirewallAccess _firewallAccess
         );
+
+    function updateTrustedAttesters(ITrustedAttesters _trustedAttesters) external;
 
     function setCheckpoint(bytes4 selector, Checkpoint memory checkpoint) external;
 

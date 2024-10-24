@@ -44,11 +44,12 @@ contract FirewallTest is Test {
     address constant mockAccess = address(uint160(345));
     address constant testAttester = address(uint160(456));
     address constant mockHook = address(uint160(567));
+    address constant mockTrustedAttesters = address(uint160(678));
 
     FirewallImpl firewall;
 
     Checkpoint checkpoint =
-        Checkpoint({threshold: 1, refStart: 2, refEnd: 3, activation: Activation.AlwaysActive, trustedOrigin: true});
+        Checkpoint({threshold: 1, refStart: 0, refEnd: 0, activation: Activation.AlwaysActive, trustedOrigin: true});
 
     function setUp() public {
         firewall = new FirewallImpl(
@@ -414,6 +415,91 @@ contract FirewallTest is Test {
             abi.encode(HookResult.ForceDeactivation)
         );
         /// No validator call!
+        firewall.secureExecution(arg);
+    }
+
+    function testFirewall_trustedAttesters() public {
+        vm.mockCall(
+            address(mockAccess),
+            abi.encodeWithSelector(IFirewallAccess.isCheckpointManager.selector, address(this)),
+            abi.encode(true)
+        );
+        Checkpoint memory chk = Checkpoint({
+            threshold: 2,
+            refStart: 4,
+            refEnd: 36,
+            activation: Activation.ConstantThreshold,
+            trustedOrigin: false
+        });
+        firewall.setCheckpoint(FirewallImpl.secureExecution.selector, chk);
+
+        uint256 arg = 3;
+        bytes32 checkpointHash = keccak256(
+            abi.encode(
+                address(this), address(firewall), FirewallImpl.secureExecution.selector, Quantization.quantize(arg)
+            )
+        );
+        vm.mockCall(
+            address(mockValidator),
+            abi.encodeWithSelector(ISecurityValidator.getCurrentAttester.selector),
+            abi.encode(testAttester)
+        );
+        vm.mockCall(
+            address(mockHook),
+            abi.encodeWithSelector(
+                ICheckpointHook.handleCheckpoint.selector, address(this), FirewallImpl.secureExecution.selector, arg
+            ),
+            abi.encode(HookResult.Inconclusive)
+        );
+        vm.mockCall(
+            address(mockValidator),
+            abi.encodeWithSelector(ISecurityValidator.executeCheckpoint.selector, checkpointHash),
+            abi.encode(keccak256(abi.encode(checkpointHash, address(firewall), bytes32(0))))
+        );
+
+        /// Expect the call on the access control contract if trusted attesters is not set.
+        vm.mockCall(
+            address(mockAccess),
+            abi.encodeWithSelector(IFirewallAccess.isTrustedAttester.selector, address(testAttester)),
+            abi.encode(true)
+        );
+
+        firewall.secureExecution(arg);
+
+        /// Set the trusted attesters.
+        vm.mockCall(
+            address(mockAccess),
+            abi.encodeWithSelector(IFirewallAccess.isFirewallAdmin.selector, address(this)),
+            abi.encode(true)
+        );
+        firewall.updateTrustedAttesters(ITrustedAttesters(mockTrustedAttesters));
+
+        /// Put the rest of the mock calls in place.
+        vm.mockCall(
+            address(mockValidator),
+            abi.encodeWithSelector(ISecurityValidator.getCurrentAttester.selector),
+            abi.encode(testAttester)
+        );
+        vm.mockCall(
+            address(mockHook),
+            abi.encodeWithSelector(
+                ICheckpointHook.handleCheckpoint.selector, address(this), FirewallImpl.secureExecution.selector, arg
+            ),
+            abi.encode(HookResult.Inconclusive)
+        );
+        vm.mockCall(
+            address(mockValidator),
+            abi.encodeWithSelector(ISecurityValidator.executeCheckpoint.selector, checkpointHash),
+            abi.encode(keccak256(abi.encode(checkpointHash, address(firewall), bytes32(0))))
+        );
+
+        /// Expect the call on the trusted attesters contract when it is set.
+        vm.mockCall(
+            address(mockTrustedAttesters),
+            abi.encodeWithSelector(IFirewallAccess.isTrustedAttester.selector, address(testAttester)),
+            abi.encode(true)
+        );
+
         firewall.secureExecution(arg);
     }
 }
