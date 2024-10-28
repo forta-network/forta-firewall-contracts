@@ -33,10 +33,10 @@ contract Deployer {
         emit DeployedFirewall(externalFirewall);
 
         ProtectedContract protectedContract = new ProtectedContract(externalFirewall);
-		emit DeployedProtectedContract(protectedContract);
+        emit DeployedProtectedContract(protectedContract);
 
         /// Next steps:
-		/// - Grant ProtectedContact the CHECKPOINT_EXECUTOR_ROLE.
-		/// - Set a checkpoint for "foo" func in the firewall by using the firewall admin account.
+        /// - Grant ProtectedContact the CHECKPOINT_EXECUTOR_ROLE.
+        /// - Set a checkpoint for "foo" func in the firewall by using the firewall admin account.
     }
 }
