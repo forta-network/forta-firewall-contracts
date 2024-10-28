@@ -3,8 +3,9 @@
 
 pragma solidity ^0.8.25;
 
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {StorageSlot} from "@openzeppelin/contracts/utils/StorageSlot.sol";
-import "./interfaces/IExternallFirewall.sol";
+import "./interfaces/IExternalFirewall.sol";
 
 /**
  * @notice A helper contract to call an external firewall.
@@ -25,11 +26,7 @@ abstract contract CheckpointExecutor {
      * @param ref The reference number to compare with the threshold
      */
     function _executeCheckpoint(bytes4 selector, uint256 ref) internal virtual {
-        CheckpointExecutorStorage storage $;
-        assembly {
-            $.slot := STORAGE_SLOT
-        }
-        IExternalFirewall($.externalFirewall).executeCheckpoint(msg.sender, selector, ref);
+        _getCheckpointExecutorStorage().externalFirewall.executeCheckpoint(msg.sender, selector, ref);
     }
 
     /**
@@ -38,11 +35,7 @@ abstract contract CheckpointExecutor {
      * @param input The input value to use in checkpoint hash computation
      */
     function _executeCheckpoint(bytes4 selector, bytes32 input) internal virtual {
-        CheckpointExecutorStorage storage $;
-        assembly {
-            $.slot := STORAGE_SLOT
-        }
-        IExternalFirewall($.externalFirewall).executeCheckpoint(msg.sender, selector, input);
+        _getCheckpointExecutorStorage().externalFirewall.executeCheckpoint(msg.sender, selector, input);
     }
 
     /**
@@ -50,10 +43,27 @@ abstract contract CheckpointExecutor {
      * @param externalFirewall New external firewall
      */
     function _setExternalFirewall(IExternalFirewall externalFirewall) internal virtual {
-        CheckpointExecutorStorage storage $;
+        _getCheckpointExecutorStorage().externalFirewall = externalFirewall;
+    }
+
+    /**
+     * @notice Helps write an attestation through the external firewall and call any function
+     * of this contract.
+     * @param attestation The set of fields that correspond to and enable the execution of call(s)
+     * @param attestationSignature Signature of EIP-712 message
+     * @param data Call data which contains the function selector and the encoded arguments
+     */
+    function attestedCall(Attestation calldata attestation, bytes calldata attestationSignature, bytes calldata data)
+        public
+        returns (bytes memory)
+    {
+        _getCheckpointExecutorStorage().externalFirewall.saveAttestation(attestation, attestationSignature);
+        return Address.functionDelegateCall(address(this), data);
+    }
+
+    function _getCheckpointExecutorStorage() internal pure virtual returns (CheckpointExecutorStorage storage $) {
         assembly {
             $.slot := STORAGE_SLOT
         }
-        $.externalFirewall = externalFirewall;
     }
 }
