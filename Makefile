@@ -12,6 +12,10 @@ deploy-firewall:
 		--slow \
 		--verify
 
+.PHONY: deploy-validator
+deploy-validator:
+	forge script --rpc-url deploy --broadcast ./script/SecurityValidatorDeployer.s.sol
+
 .PHONY: gas
 gas:
 	forge test --match-test attestationGas -vvvv

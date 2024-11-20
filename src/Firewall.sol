@@ -113,7 +113,7 @@ abstract contract Firewall is IFirewall, IAttesterInfo, FirewallPermissions {
      * Updates the trusted attesters contract. This contract is used for checking current attester
      * against the trusted ones only if set. If it is set as zero address (or is unset) then the check
      * defaults to the firewall access contract.
-     * @param _trustedAttesters The contract which knows the set of trusted attesters. 
+     * @param _trustedAttesters The contract which knows the set of trusted attesters.
      */
     function updateTrustedAttesters(ITrustedAttesters _trustedAttesters) public virtual onlyFirewallAdmin {
         _updateTrustedAttesters(_trustedAttesters);
