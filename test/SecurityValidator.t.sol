@@ -10,6 +10,8 @@ import {SecurityValidator, BYPASS_FLAG} from "../src/SecurityValidator.sol";
 import {Quantization} from "../src/Quantization.sol";
 import "../src/interfaces/Checkpoint.sol";
 import "../src/interfaces/FirewallDependencies.sol";
+import "../src/TrustedAttesters.sol";
+import "../src/interfaces/ITrustedAttesters.sol";
 
 contract EVCTest is Test {
     using Quantization for uint256;
@@ -24,6 +26,7 @@ contract EVCTest is Test {
     SecurityValidator validator;
     IEVC evc;
     DummyVault vault;
+    TrustedAttesters trustedAttesters;
 
     Attestation attestation;
     bytes attestationSignature;
@@ -39,7 +42,11 @@ contract EVCTest is Test {
         otherUserPrivateKey = uint256(keccak256("otherUser"));
         otherUser = vm.addr(otherUserPrivateKey);
 
-        validator = new SecurityValidator(address(0));
+        trustedAttesters = new TrustedAttesters(address(this));
+        trustedAttesters.grantRole(ATTESTER_MANAGER_ROLE, address(this));
+        trustedAttesters.grantRole(TRUSTED_ATTESTER_ROLE, address(attester));
+
+        validator = new SecurityValidator(address(0), ITrustedAttesters(trustedAttesters));
         evc = new EthereumVaultConnector();
         vault = new DummyVault(ISecurityValidator(address(validator)));
 
@@ -147,6 +154,40 @@ contract EVCTest is Test {
         vm.broadcast(userPrivateKey);
         /// Store the attestation in the first transaction.
         validator.storeAttestation(attestation, attestationSignature);
+
+        IEVC.BatchItem[] memory batch = new IEVC.BatchItem[](2);
+
+        /// Exclude the attestation from the batch.
+
+        /// Call the first vault function.
+        batch[0] = IEVC.BatchItem({
+            targetContract: address(vault),
+            onBehalfOfAccount: user,
+            value: 0,
+            data: abi.encodeWithSelector(DummyVault.doFirst.selector, 123)
+        });
+
+        /// Call the second vault function.
+        batch[1] = IEVC.BatchItem({
+            targetContract: address(vault),
+            onBehalfOfAccount: user,
+            value: 0,
+            data: abi.encodeWithSelector(DummyVault.doSecond.selector, 456)
+        });
+
+        /// Send the batch - it should be able to use the attestation from the first tx.
+        vm.broadcast(userPrivateKey);
+        evc.batch(batch);
+
+        /// The second try should fail as there are no attestations anymore.
+        vm.expectRevert();
+        evc.batch(batch);
+    }
+
+    function test_attestedEVCBatch_twoTx_storeForOrigin() public {
+        vm.broadcast(attesterPrivateKey);
+        /// Store the attestation in the first transaction.
+        validator.storeAttestationForOrigin(attestation, attestationSignature, user);
 
         IEVC.BatchItem[] memory batch = new IEVC.BatchItem[](2);
 
@@ -368,8 +409,8 @@ contract EVCTest is Test {
         });
 
         vm.broadcast(userPrivateKey);
-        bytes32 expectedHash = 0x8eef2e46cd1e7ae75ac414283c677c544c34901ed90ce97905ebb9b4a87052b3;
-        bytes32 computedHash = 0xf4d3d83bdd1b97c9589d4ccd592ea9ab7e410543838022b48bf8ddb1292b6a6e;
+        bytes32 expectedHash = 0x4c09b2b277b76e9cb03821213d6233db07a068297fdde52bd66c313b6dfdd2cb;
+        bytes32 computedHash = 0x61ef62ddde88dd8f814f90d380304decab34c76e0b80d30b61d7f13edc0947f6;
         vm.expectRevert(
             abi.encodeWithSelector(
                 SecurityValidator.InvalidExecutionHash.selector, address(validator), expectedHash, computedHash
