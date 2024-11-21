@@ -43,41 +43,46 @@ contract ReentrancyAttack {
         }
     }
 
-    function deposit() public payable {
+    function deposit(address _vulnerableContract) public payable {
         require(msg.value >= 1 ether);
-        IReentrancyVulnerable(vulnerableContract).deposit{value: msg.value}();
+        vulnerableContract = _vulnerableContract;
+        IReentrancyVulnerable(_vulnerableContract).deposit{value: msg.value}();
     }
 
-    function withdraw() public {
+    function withdraw(address _vulnerableContract) public {
         benignWithdraw = true;
-        IReentrancyVulnerable(vulnerableContract).withdraw();
+        vulnerableContract = _vulnerableContract;
+        IReentrancyVulnerable(_vulnerableContract).withdraw();
     }
 
-    function withdrawWithAttestation(Attestation calldata attestation, bytes calldata attestationSignature) public {
+    function withdrawWithAttestation(address _vulnerableContract, Attestation calldata attestation, bytes calldata attestationSignature) public {
         benignWithdraw = true;
+        vulnerableContract = _vulnerableContract;
 
         bytes memory data = abi.encodeWithSelector(IReentrancyVulnerable.withdraw.selector);
-        IFirewall(vulnerableContract).attestedCall(attestation, attestationSignature, data);
+        IFirewall(_vulnerableContract).attestedCall(attestation, attestationSignature, data);
     }
 
-    function attack() public payable {
+    function attack(address _vulnerableContract) public payable {
         require(msg.value >= 1 ether);
         benignWithdraw = false;
+        vulnerableContract = _vulnerableContract;
 
-        IReentrancyVulnerable(vulnerableContract).deposit{value: msg.value}();
-        IReentrancyVulnerable(vulnerableContract).withdraw();
+        IReentrancyVulnerable(_vulnerableContract).deposit{value: msg.value}();
+        IReentrancyVulnerable(_vulnerableContract).withdraw();
 
         // Needed for a newer version of model
         // selfdestruct(payable(msg.sender));
     }
 
-    function attackWithAttestation(Attestation calldata attestation, bytes calldata attestationSignature) public payable {
+    function attackWithAttestation(address _vulnerableContract, Attestation calldata attestation, bytes calldata attestationSignature) public payable {
         require(msg.value >= 1 ether);
         benignWithdraw = false;
+        vulnerableContract = _vulnerableContract;
 
-        IReentrancyVulnerable(vulnerableContract).deposit{value: msg.value}();
+        IReentrancyVulnerable(_vulnerableContract).deposit{value: msg.value}();
         bytes memory data = abi.encodeWithSelector(IReentrancyVulnerable.withdraw.selector);
-        IFirewall(vulnerableContract).attestedCall(attestation, attestationSignature, data);
+        IFirewall(_vulnerableContract).attestedCall(attestation, attestationSignature, data);
     }
 
     function withdrawFunds() public {
