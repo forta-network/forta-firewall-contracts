@@ -6,7 +6,6 @@ import "../src/AttestationForwarder.sol";
 import "../src/SecurityValidator.sol";
 import "../src/FirewallAccess.sol";
 import "../src/examples/ReentrancyVulnerable.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import "../src/Firewall.sol";
 import {ReentrancyAttack} from "../src/examples/ReentrancyAttack.sol";
 
@@ -30,7 +29,7 @@ contract Reentrancy is Script {
         firewallAccess.grantRole(FIREWALL_ADMIN_ROLE, defaultAdmin);
         firewallAccess.grantRole(PROTOCOL_ADMIN_ROLE, defaultAdmin);
         firewallAccess.grantRole(ATTESTER_MANAGER_ROLE, defaultAdmin);
-        address trustedAttester = 0x875A57917E46A440c71d9EC6F6B5c8B772D6C895;
+        address trustedAttester = 0xae9554eC2f8cc606C6543721d07Fa4aaDC555272;
         firewallAccess.grantRole(TRUSTED_ATTESTER_ROLE, trustedAttester);
 
         ReentrancyVulnerable reentrancyVulnerable = new ReentrancyVulnerable(
@@ -60,7 +59,7 @@ contract Reentrancy is Script {
         // vm.startBroadcast(attackerPrivateKey);
 
         // // Should be set to address of `ReentrancyVulnerable` contract deployed at L33-37
-        // address reentrancyVulnerableAddress = 0x38ac925656DA89fc667f5F3Aa4e8417571AB73fB;
+        // address reentrancyVulnerableAddress = 0xAEbe8393e30bb2A6538399ED0Da9926a81202462;
         // ReentrancyAttack reentrancyAttack = new ReentrancyAttack(reentrancyVulnerableAddress);
 
 
