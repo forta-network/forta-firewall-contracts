@@ -15,7 +15,11 @@ interface ISecurityValidator {
         returns (bytes32);
 
     function storeAttestation(Attestation calldata attestation, bytes calldata attestationSignature) external;
-    function storeAttestationForOrigin(Attestation calldata attestation, bytes calldata attestationSignature, address origin) external;
+    function storeAttestationForOrigin(
+        Attestation calldata attestation,
+        bytes calldata attestationSignature,
+        address origin
+    ) external;
     function saveAttestation(Attestation calldata attestation, bytes calldata attestationSignature) external;
 
     function executeCheckpoint(bytes32 checkpointHash) external returns (bytes32);
