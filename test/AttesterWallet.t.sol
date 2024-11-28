@@ -4,11 +4,13 @@ pragma solidity ^0.8.25;
 
 import {Test, console, Vm} from "forge-std/Test.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "./helpers/DummyVault.sol";
 import {SecurityValidator, BYPASS_FLAG} from "../src/SecurityValidator.sol";
 import "../src/TrustedAttesters.sol";
 import "../src/interfaces/ITrustedAttesters.sol";
 import "../src/AttesterWallet.sol";
+import "../src/interfaces/IAttesterWallet.sol";
 
 contract AttesterWalletTest is Test {
     uint256 attesterPrivateKey;
@@ -20,7 +22,7 @@ contract AttesterWalletTest is Test {
 
     SecurityValidator validator;
     TrustedAttesters trustedAttesters;
-    AttesterWallet attesterWallet;
+    IAttesterWallet attesterWallet;
 
     Attestation attestation;
     bytes attestationSignature;
@@ -41,7 +43,10 @@ contract AttesterWalletTest is Test {
         trustedAttesters.grantRole(TRUSTED_ATTESTER_ROLE, address(attester));
 
         validator = new SecurityValidator(address(0), trustedAttesters);
-        attesterWallet = new AttesterWallet(trustedAttesters, address(this));
+        AttesterWallet attesterWalletImpl = new AttesterWallet();
+        bytes memory initCall = abi.encodeCall(AttesterWallet.initialize, (trustedAttesters, address(this)));
+        ERC1967Proxy proxy = new ERC1967Proxy(address(attesterWalletImpl), initCall);
+        attesterWallet = IAttesterWallet(address(proxy));
 
         trustedAttesters.grantRole(TRUSTED_ATTESTER_ROLE, address(attesterWallet));
         attesterWallet.setSecurityValidator(validator);

@@ -3,8 +3,9 @@
 
 pragma solidity ^0.8.25;
 
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
+import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {ISecurityValidator} from "./interfaces/ISecurityValidator.sol";
 import {ITrustedAttesters} from "./interfaces/ITrustedAttesters.sol";
 import {Attestation} from "./interfaces/Attestation.sol";
@@ -14,7 +15,7 @@ import {IAttesterWallet} from "./interfaces/IAttesterWallet.sol";
  * @notice Keeps native currency balances per user transaction origin and spends them
  * when an attester stores an attestation on behalf of such an origin.
  */
-contract AttesterWallet is IAttesterWallet, ERC20, AccessControl {
+contract AttesterWallet is IAttesterWallet, ERC20Upgradeable, AccessControlUpgradeable {
     error ZeroBeneficiary();
     error FailedToWithdrawFunds();
     error FailedToFundAttester();
@@ -30,7 +31,12 @@ contract AttesterWallet is IAttesterWallet, ERC20, AccessControl {
     /// This is for protecting the attester against loss.
     uint256 extraGasOverhead = 35000;
 
-    constructor(ITrustedAttesters _trustedAttesters, address _defaultAdmin) ERC20("Forta Attester Gas", "FORTAGAS") {
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(ITrustedAttesters _trustedAttesters, address _defaultAdmin) public initializer {
+        __ERC20_init("Forta Attester Gas", "FORTAGAS");
         _grantRole(DEFAULT_ADMIN_ROLE, _defaultAdmin);
         trustedAttesters = _trustedAttesters;
     }
