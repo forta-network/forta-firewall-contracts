@@ -3,9 +3,8 @@
 
 pragma solidity ^0.8.25;
 
-import {ERC2771Forwarder} from "@openzeppelin/contracts/metatx/ERC2771Forwarder.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ISecurityValidator} from "./interfaces/ISecurityValidator.sol";
 import {ITrustedAttesters} from "./interfaces/ITrustedAttesters.sol";
 import {Attestation} from "./interfaces/Attestation.sol";
@@ -15,11 +14,8 @@ import {IAttesterWallet} from "./interfaces/IAttesterWallet.sol";
  * @notice Keeps native currency balances per user transaction origin and spends them
  * when an attester stores an attestation on behalf of such an origin.
  */
-contract AttesterWallet is IAttesterWallet, AccessControl {
-    using Math for uint256;
-
+contract AttesterWallet is IAttesterWallet, ERC20, AccessControl {
     error ZeroBeneficiary();
-    error InsufficientFunds(address beneficiary);
     error FailedToWithdrawFunds();
     error FailedToFundAttester();
 
@@ -30,13 +26,11 @@ contract AttesterWallet is IAttesterWallet, AccessControl {
     /// storing an attestation.
     ITrustedAttesters public trustedAttesters;
 
-    /// @notice A gas overhead amount which is added to the charged amount.
+    /// @notice A gas overhead amount which covers the cost for charging a user.
+    /// This is for protecting the attester against loss.
     uint256 extraGasOverhead = 35000;
 
-    /// @notice All sender balances calculated and stored, after receiving and sending.
-    mapping(address => uint256) balances;
-
-    constructor(ITrustedAttesters _trustedAttesters, address _defaultAdmin) {
+    constructor(ITrustedAttesters _trustedAttesters, address _defaultAdmin) ERC20("Forta Attester Gas", "FORTAGAS") {
         _grantRole(DEFAULT_ADMIN_ROLE, _defaultAdmin);
         trustedAttesters = _trustedAttesters;
     }
@@ -58,18 +52,16 @@ contract AttesterWallet is IAttesterWallet, AccessControl {
         uint256 initialGas = gasleft();
         _;
         uint256 spentAmount = initialGas - gasleft() + extraGasOverhead;
-        (bool success, uint256 finalAmount) = balances[beneficiary].trySub(spentAmount);
-        if (!success) revert InsufficientFunds(beneficiary);
-        (success,) = msg.sender.call{value: spentAmount}(""); // send funds to the attester EOA
+        _burn(beneficiary, spentAmount);
+        (bool success,) = msg.sender.call{value: spentAmount}(""); // send funds to the attester EOA
         if (!success) revert FailedToFundAttester();
-        balances[beneficiary] = finalAmount;
     }
 
     /**
      * @notice Direct native currency transfers are registered to the balance of the sender.
      */
     receive() external payable {
-        balances[msg.sender] += msg.value;
+        _mint(msg.sender, msg.value);
     }
 
     /**
@@ -94,31 +86,25 @@ contract AttesterWallet is IAttesterWallet, AccessControl {
      */
     function deposit(address beneficiary) public payable {
         if (beneficiary == address(0)) revert ZeroBeneficiary();
-        balances[beneficiary] += msg.value;
+        _mint(beneficiary, msg.value);
     }
 
     /**
      * @notice Withdraws balance back to sender.
      */
-    function withdraw(uint256 amount) public {
-        if (balances[msg.sender] < amount) revert InsufficientFunds(msg.sender);
-        (bool success,) = msg.sender.call{value: amount}(""); // send funds to msg.sender
+    function withdraw(uint256 amount, address beneficiary) public {
+        if (beneficiary == address(0)) revert ZeroBeneficiary();
+        _burn(msg.sender, amount);
+        (bool success,) = beneficiary.call{value: amount}(""); // send funds to msg.sender
         if (!success) revert FailedToWithdrawFunds();
     }
 
     /**
      * @notice Withdraws all balance back to sender.
      */
-    function withdrawAll() public {
-        withdraw(balances[msg.sender]);
-    }
-
-    /**
-     * @notice Returns the balance of given beneficiary.
-     * @param beneficiary The attestation beneficiary.
-     */
-    function balanceOf(address beneficiary) public view returns (uint256) {
-        return balances[beneficiary];
+    function withdrawAll(address beneficiary) public {
+        if (beneficiary == address(0)) revert ZeroBeneficiary();
+        withdraw(balanceOf(msg.sender), beneficiary);
     }
 
     /**

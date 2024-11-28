@@ -58,7 +58,6 @@ contract AttesterWalletTest is Test {
     }
 
     function testAttesterWalletStoreAttestation() public {
-        vm.txGasPrice(1 gwei);
         deal(attester, 1 ether);
         deal(user, 1 ether);
 
@@ -74,6 +73,27 @@ contract AttesterWalletTest is Test {
         console.log("attester compensation:", (attester.balance - 1 ether));
     }
 
-    // TODO: Test insufficient funds case.
-    // TODO: Add deposit and withdraw tests.
+    function testAttesterWalletDepositWithdraw() public {
+        deal(user, 10 ether);
+
+        vm.prank(user);
+        attesterWallet.deposit{value: 0.5 ether}(user);
+        vm.prank(user);
+        (bool success,) = address(attesterWallet).call{value: 0.4 ether}("");
+        assertTrue(success);
+
+        assertEq(0.9 ether, attesterWallet.balanceOf(user));
+
+        vm.prank(user);
+        attesterWallet.withdraw(0.9 ether, otherUser);
+
+        assertEq(0.9 ether, otherUser.balance);
+
+        vm.prank(user);
+        attesterWallet.deposit{value: 0.5 ether}(user);
+        vm.prank(user);
+        attesterWallet.withdrawAll(otherUser);
+
+        assertEq(1.4 ether, otherUser.balance);
+    }
 }
