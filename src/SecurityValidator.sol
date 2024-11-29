@@ -9,6 +9,7 @@ import {ERC2771Context} from "@openzeppelin/contracts/metatx/ERC2771Context.sol"
 import {TransientSlot} from "@openzeppelin/contracts/utils/TransientSlot.sol";
 import "./interfaces/ISecurityValidator.sol";
 import "./interfaces/Attestation.sol";
+import "./interfaces/ITrustedAttesters.sol";
 
 address constant BYPASS_FLAG = 0x0000000000000000000000000000000000f01274; // "forta" in leetspeak
 
@@ -35,6 +36,7 @@ contract SecurityValidator is ISecurityValidator, EIP712, ERC2771Context {
     error InvalidAttestation();
     error AttestationNotFound();
     error EmptyAttestation();
+    error UntrustedAttester(address currentAttester);
 
     /**
      * @notice Transient storage slots used for storing the attestation values
@@ -51,12 +53,31 @@ contract SecurityValidator is ISecurityValidator, EIP712, ERC2771Context {
         keccak256("Attestation(uint256 deadline,bytes32[] executionHashes)");
 
     /**
+     * @notice The large set of trusted attesters which can store attestations on behalf of other
+     * transaction origin accounts.
+     */
+    ITrustedAttesters trustedAttesters;
+
+    /**
      * @notice A mapping from transaction senders to first execution hashes and to attestations.
      * This is useful for storing an attestation in a previous transaction safely.
      */
     mapping(address origin => mapping(bytes32 firstExecutionHash => StoredAttestation attestation)) private attestations;
 
-    constructor(address _trustedForwarder) EIP712("SecurityValidator", "1") ERC2771Context(_trustedForwarder) {}
+    /**
+     * @notice This ensures that the sender is a trusted attester.
+     */
+    modifier onlyTrustedAttester() {
+        if (!trustedAttesters.isTrustedAttester(msg.sender)) revert UntrustedAttester(msg.sender);
+        _;
+    }
+
+    constructor(address _trustedForwarder, ITrustedAttesters _trustedAttesters)
+        EIP712("SecurityValidator", "1")
+        ERC2771Context(_trustedForwarder)
+    {
+        trustedAttesters = _trustedAttesters;
+    }
 
     /**
      * @notice An alternative that uses persistent storage instead of transient.
@@ -65,17 +86,26 @@ contract SecurityValidator is ISecurityValidator, EIP712, ERC2771Context {
      * @param attestationSignature Signature of EIP-712 message
      */
     function storeAttestation(Attestation calldata attestation, bytes calldata attestationSignature) public {
-        if (attestation.executionHashes.length == 0) revert EmptyAttestation();
-        bytes32 firstExecHash = attestation.executionHashes[0];
-        address msgSender = _msgSender();
-        StoredAttestation storage storedAttestation = attestations[msgSender][firstExecHash];
-        if (storedAttestation.attestation.deadline > block.timestamp) {
-            revert AttestationOverwrite();
-        }
-        storedAttestation.attestation = attestation;
-        bytes32 structHash = hashAttestation(attestation);
-        address attester = ECDSA.recover(structHash, attestationSignature);
-        storedAttestation.attester = attester;
+        _storeAttestation(attestation, attestationSignature, _msgSender());
+    }
+
+    /**
+     * @notice An alternative that uses persistent storage instead of transient.
+     * This function defers unpacking of an attestation to the transient storage.
+     * Compared to storeAttestation(), this approach favors storing attestations on behalf of origins
+     * over ERC-2771-based forwarding but requires a trusted set of attesters. This is for avoiding
+     * potential attackers which might try to write on behalf of an origin without being an actual
+     * attester.
+     * @param attestation The set of fields that correspond to and enable the execution of call(s)
+     * @param attestationSignature Signature of EIP-712 message
+     * @param origin The origin which will benefit from the stored attestation
+     */
+    function storeAttestationForOrigin(
+        Attestation calldata attestation,
+        bytes calldata attestationSignature,
+        address origin
+    ) public onlyTrustedAttester {
+        _storeAttestation(attestation, attestationSignature, origin);
     }
 
     /**
@@ -180,6 +210,21 @@ contract SecurityValidator is ISecurityValidator, EIP712, ERC2771Context {
      */
     function validateFinalState() public view {
         _requireIdleOrDone();
+    }
+
+    function _storeAttestation(Attestation calldata attestation, bytes calldata attestationSignature, address origin)
+        internal
+    {
+        if (attestation.executionHashes.length == 0) revert EmptyAttestation();
+        bytes32 firstExecHash = attestation.executionHashes[0];
+        StoredAttestation storage storedAttestation = attestations[origin][firstExecHash];
+        if (storedAttestation.attestation.deadline > block.timestamp) {
+            revert AttestationOverwrite();
+        }
+        storedAttestation.attestation = attestation;
+        bytes32 structHash = hashAttestation(attestation);
+        address attester = ECDSA.recover(structHash, attestationSignature);
+        storedAttestation.attester = attester;
     }
 
     function _initAttestation(Attestation memory attestation, address attester) internal {

@@ -18,6 +18,7 @@ import {Quantization} from "../src/Quantization.sol";
 import "../src/interfaces/Checkpoint.sol";
 import "../src/interfaces/FirewallDependencies.sol";
 import "../src/interfaces/IProxyFirewall.sol";
+import "../src/interfaces/ITrustedAttesters.sol";
 
 interface ILogicContract {
     function withdrawAmount(uint256 n) external;
@@ -63,7 +64,7 @@ contract ProxyFirewallTest is Test {
     Checkpoint checkpoint;
 
     function setUp() public {
-        validator = new SecurityValidator(address(0));
+        validator = new SecurityValidator(address(0), ITrustedAttesters(address(0)));
 
         firewallAccess = new FirewallAccess(address(this));
 

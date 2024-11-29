@@ -16,7 +16,7 @@ contract DeployerScript is Script {
         uint256 attesterPrivateKey = vm.parseUint("0x14e000d8d8aaad9595be9d90b2c35097f00a3bb3882183035788fdf5acf7192e");
         address attester = vm.addr(attesterPrivateKey);
 
-        SecurityValidator validator = new SecurityValidator(address(0));
+        SecurityValidator validator = new SecurityValidator(address(0), ITrustedAttesters(address(0)));
         EthereumVaultConnector evc = new EthereumVaultConnector();
         DummyVault vault = new DummyVault(ISecurityValidator(address(validator)));
         console.log("validator contract:", address(validator));
