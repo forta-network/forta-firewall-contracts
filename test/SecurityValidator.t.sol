@@ -121,7 +121,7 @@ contract SecurityValidatorTest is Test {
             data: abi.encodeWithSelector(SecurityValidator.saveAttestation.selector, attestation, attestationSignature)
         });
 
-        // Save the attestation again.
+        /// Save the attestation again.
         batch[1] = IEVC.BatchItem({
             targetContract: address(validator),
             onBehalfOfAccount: user,
@@ -278,8 +278,7 @@ contract SecurityValidatorTest is Test {
         vm.broadcast(userPrivateKey);
         validator.storeAttestation(attestation, attestationSignature);
 
-        // Store the attestation for the second time: it should fail because it's an overwrite.
-        vm.expectRevert();
+        /// Store the attestation for the second time: the overwrite should not fail
         vm.broadcast(userPrivateKey);
         validator.storeAttestation(attestation, attestationSignature);
     }
@@ -299,7 +298,7 @@ contract SecurityValidatorTest is Test {
             data: abi.encodeWithSelector(DummyVault.doFirst.selector, 123)
         });
 
-        // Saving an attestation should fail because there is an active and unfinished attestation.
+        /// Saving an attestation should fail because there is an active and unfinished attestation.
         batch[1] = IEVC.BatchItem({
             targetContract: address(validator),
             onBehalfOfAccount: user,
@@ -347,7 +346,7 @@ contract SecurityValidatorTest is Test {
             data: abi.encodeWithSelector(DummyVault.doSecond.selector, 456)
         });
 
-        // Save the attestation again - it should work since the previous was fully consumed.
+        /// Save the attestation again - it should work since the previous was fully consumed.
         batch[3] = IEVC.BatchItem({
             targetContract: address(validator),
             onBehalfOfAccount: user,

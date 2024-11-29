@@ -28,7 +28,6 @@ struct StoredAttestation {
 contract SecurityValidator is ISecurityValidator, EIP712 {
     using TransientSlot for bytes32;
 
-    error AttestationOverwrite();
     error AttestationDeadlineExceeded();
     error HashCountExceeded(uint256 atIndex);
     error InvalidExecutionHash(address validator, bytes32 expectedHash, bytes32 computedHash);
@@ -71,9 +70,7 @@ contract SecurityValidator is ISecurityValidator, EIP712 {
         _;
     }
 
-    constructor(ITrustedAttesters _trustedAttesters)
-        EIP712("SecurityValidator", "1")
-    {
+    constructor(ITrustedAttesters _trustedAttesters) EIP712("SecurityValidator", "1") {
         trustedAttesters = _trustedAttesters;
     }
 
@@ -118,8 +115,8 @@ contract SecurityValidator is ISecurityValidator, EIP712 {
         bytes32 structHash = hashAttestation(attestation);
         address attester = ECDSA.recover(structHash, attestationSignature);
 
-        // Avoid reentrancy: Make sure that we are starting from a zero state or after
-        // a previous attestation has been used.
+        /// Avoid reentrancy: Make sure that we are starting from a zero state or after
+        /// a previous attestation has been used.
         _requireIdleOrDone();
 
         _initAttestation(attestation, attester);
@@ -216,9 +213,6 @@ contract SecurityValidator is ISecurityValidator, EIP712 {
         if (attestation.executionHashes.length == 0) revert EmptyAttestation();
         bytes32 firstExecHash = attestation.executionHashes[0];
         StoredAttestation storage storedAttestation = attestations[origin][firstExecHash];
-        if (storedAttestation.attestation.deadline > block.timestamp) {
-            revert AttestationOverwrite();
-        }
         storedAttestation.attestation = attestation;
         bytes32 structHash = hashAttestation(attestation);
         address attester = ECDSA.recover(structHash, attestationSignature);
