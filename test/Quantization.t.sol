@@ -7,7 +7,7 @@ import {Quantization} from "../src/Quantization.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 contract QuantizationTest is Test {
-    function testQuantize() public view {
+    function testQuantize() public pure {
         /// 0x000000000000000000000000000000000000000000000000000000000148bd9b
         uint256 num1 = 21544347;
         console.logBytes32(bytes32(num1));

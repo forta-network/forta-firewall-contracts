@@ -42,7 +42,7 @@ contract AttesterWalletTest is Test {
         trustedAttesters.grantRole(ATTESTER_MANAGER_ROLE, address(this));
         trustedAttesters.grantRole(TRUSTED_ATTESTER_ROLE, address(attester));
 
-        validator = new SecurityValidator(address(0), trustedAttesters);
+        validator = new SecurityValidator(trustedAttesters);
         AttesterWallet attesterWalletImpl = new AttesterWallet();
         bytes memory initCall = abi.encodeCall(AttesterWallet.initialize, (trustedAttesters, address(this)));
         ERC1967Proxy proxy = new ERC1967Proxy(address(attesterWalletImpl), initCall);

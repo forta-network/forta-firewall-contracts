@@ -5,7 +5,6 @@ pragma solidity ^0.8.25;
 
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
-import {ERC2771Context} from "@openzeppelin/contracts/metatx/ERC2771Context.sol";
 import {TransientSlot} from "@openzeppelin/contracts/utils/TransientSlot.sol";
 import "./interfaces/ISecurityValidator.sol";
 import "./interfaces/Attestation.sol";
@@ -26,7 +25,7 @@ struct StoredAttestation {
  * @notice A singleton to be used by attesters to enable execution and contracts to ensure
  * that execution was enabled by an attester.
  */
-contract SecurityValidator is ISecurityValidator, EIP712, ERC2771Context {
+contract SecurityValidator is ISecurityValidator, EIP712 {
     using TransientSlot for bytes32;
 
     error AttestationOverwrite();
@@ -72,9 +71,8 @@ contract SecurityValidator is ISecurityValidator, EIP712, ERC2771Context {
         _;
     }
 
-    constructor(address _trustedForwarder, ITrustedAttesters _trustedAttesters)
+    constructor(ITrustedAttesters _trustedAttesters)
         EIP712("SecurityValidator", "1")
-        ERC2771Context(_trustedForwarder)
     {
         trustedAttesters = _trustedAttesters;
     }
@@ -86,7 +84,7 @@ contract SecurityValidator is ISecurityValidator, EIP712, ERC2771Context {
      * @param attestationSignature Signature of EIP-712 message
      */
     function storeAttestation(Attestation calldata attestation, bytes calldata attestationSignature) public {
-        _storeAttestation(attestation, attestationSignature, _msgSender());
+        _storeAttestation(attestation, attestationSignature, msg.sender);
     }
 
     /**

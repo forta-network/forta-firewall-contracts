@@ -64,7 +64,7 @@ contract ProxyFirewallTest is Test {
     Checkpoint checkpoint;
 
     function setUp() public {
-        validator = new SecurityValidator(address(0), ITrustedAttesters(address(0)));
+        validator = new SecurityValidator(ITrustedAttesters(address(0)));
 
         firewallAccess = new FirewallAccess(address(this));
 
