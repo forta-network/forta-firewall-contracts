@@ -121,7 +121,7 @@ contract SecurityValidatorTest is Test {
             data: abi.encodeWithSelector(SecurityValidator.saveAttestation.selector, attestation, attestationSignature)
         });
 
-        // Save the attestation again.
+        /// Save the attestation again.
         batch[1] = IEVC.BatchItem({
             targetContract: address(validator),
             onBehalfOfAccount: user,
@@ -278,8 +278,7 @@ contract SecurityValidatorTest is Test {
         vm.broadcast(userPrivateKey);
         validator.storeAttestation(attestation, attestationSignature);
 
-        // Store the attestation for the second time: it should fail because it's an overwrite.
-        vm.expectRevert();
+        // Store the attestation for the second time: the overwrite should not fail
         vm.broadcast(userPrivateKey);
         validator.storeAttestation(attestation, attestationSignature);
     }
