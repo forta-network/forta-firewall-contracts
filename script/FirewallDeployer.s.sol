@@ -38,7 +38,7 @@ contract FirewallDeployerScript is Script {
         uint256 deployer = vm.parseUint(deployerPrivateKeyStr);
         vm.startBroadcast(deployer);
 
-        SecurityValidator validator = new SecurityValidator(address(0), ITrustedAttesters(address(0)));
+        SecurityValidator validator = new SecurityValidator(ITrustedAttesters(address(0)));
         ExternalFirewall externalFirewall = new ExternalFirewall(
             ISecurityValidator(address(validator)),
             ICheckpointHook(address(0)),

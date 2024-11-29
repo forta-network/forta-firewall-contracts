@@ -13,7 +13,7 @@ import "../src/interfaces/FirewallDependencies.sol";
 import "../src/TrustedAttesters.sol";
 import "../src/interfaces/ITrustedAttesters.sol";
 
-contract EVCTest is Test {
+contract SecurityValidatorTest is Test {
     using Quantization for uint256;
 
     uint256 attesterPrivateKey;
@@ -46,7 +46,7 @@ contract EVCTest is Test {
         trustedAttesters.grantRole(ATTESTER_MANAGER_ROLE, address(this));
         trustedAttesters.grantRole(TRUSTED_ATTESTER_ROLE, address(attester));
 
-        validator = new SecurityValidator(address(0), ITrustedAttesters(trustedAttesters));
+        validator = new SecurityValidator(ITrustedAttesters(trustedAttesters));
         evc = new EthereumVaultConnector();
         vault = new DummyVault(ISecurityValidator(address(validator)));
 
