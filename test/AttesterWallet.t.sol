@@ -65,6 +65,7 @@ contract AttesterWalletTest is Test {
     function testAttesterWalletStoreAttestation() public {
         deal(attester, 1 ether);
         deal(user, 1 ether);
+        vm.txGasPrice(1 gwei);
 
         vm.prank(user);
         attesterWallet.deposit{value: 0.5 ether}(user);

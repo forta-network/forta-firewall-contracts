@@ -29,7 +29,7 @@ contract AttesterWallet is IAttesterWallet, ERC20Upgradeable, AccessControlUpgra
 
     /// @notice A gas overhead amount which covers the cost for charging a user.
     /// This is for protecting the attester against loss.
-    uint256 extraGasOverhead = 35000;
+    uint256 extraGasOverhead;
 
     constructor() {
         _disableInitializers();
@@ -39,6 +39,7 @@ contract AttesterWallet is IAttesterWallet, ERC20Upgradeable, AccessControlUpgra
         __ERC20_init("Forta Attester Gas", "FORTAGAS");
         _grantRole(DEFAULT_ADMIN_ROLE, _defaultAdmin);
         trustedAttesters = _trustedAttesters;
+        extraGasOverhead = 38000;
     }
 
     /**
@@ -57,7 +58,7 @@ contract AttesterWallet is IAttesterWallet, ERC20Upgradeable, AccessControlUpgra
     modifier chargeForAttestation(address beneficiary) {
         uint256 initialGas = gasleft();
         _;
-        uint256 spentAmount = initialGas - gasleft() + extraGasOverhead;
+        uint256 spentAmount = (initialGas - gasleft() + extraGasOverhead) * tx.gasprice;
         _burn(beneficiary, spentAmount);
         (bool success,) = msg.sender.call{value: spentAmount}(""); // send funds to the attester EOA
         if (!success) revert FailedToFundAttester();
