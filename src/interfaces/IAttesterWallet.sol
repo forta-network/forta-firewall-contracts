@@ -8,13 +8,14 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface IAttesterWallet is IERC20 {
     function setSecurityValidator(ISecurityValidator _securityValidator) external;
-    function setExtraGasOverhead(uint256 _extraGasOverhead) external;
     function deposit(address beneficiary) external payable;
     function withdraw(uint256 amount, address beneficiary) external;
     function withdrawAll(address beneficiary) external;
     function storeAttestationForOrigin(
         Attestation calldata attestation,
         bytes calldata attestationSignature,
-        address beneficiary
+        address beneficiary,
+        address chargeAccount,
+        uint256 chargeAmount
     ) external;
 }

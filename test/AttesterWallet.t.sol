@@ -44,12 +44,11 @@ contract AttesterWalletTest is Test {
 
         validator = new SecurityValidator(trustedAttesters);
         AttesterWallet attesterWalletImpl = new AttesterWallet();
-        bytes memory initCall = abi.encodeCall(AttesterWallet.initialize, (trustedAttesters, address(this)));
+        bytes memory initCall = abi.encodeCall(AttesterWallet.initialize, (validator, trustedAttesters, address(this)));
         ERC1967Proxy proxy = new ERC1967Proxy(address(attesterWalletImpl), initCall);
         attesterWallet = IAttesterWallet(address(proxy));
 
         trustedAttesters.grantRole(TRUSTED_ATTESTER_ROLE, address(attesterWallet));
-        attesterWallet.setSecurityValidator(validator);
 
         /// very large - in seconds
         attestation.deadline = 1000000000;
@@ -63,6 +62,7 @@ contract AttesterWalletTest is Test {
     }
 
     function testAttesterWalletStoreAttestation() public {
+        uint256 chargeAmount = 0.22 ether;
         deal(attester, 1 ether);
         deal(user, 1 ether);
         vm.txGasPrice(1 gwei);
@@ -71,12 +71,9 @@ contract AttesterWalletTest is Test {
         attesterWallet.deposit{value: 0.5 ether}(user);
 
         vm.prank(attester);
-        vm.startSnapshotGas("store-attestation");
-        attesterWallet.storeAttestationForOrigin(attestation, attestationSignature, user);
-        uint256 gasUsed = vm.stopSnapshotGas();
+        attesterWallet.storeAttestationForOrigin(attestation, attestationSignature, user, user, chargeAmount);
 
-        console.log("gas used for attestation tx:", gasUsed);
-        console.log("attester compensation:", (attester.balance - 1 ether));
+        assertEq(1.22 ether, attester.balance);
     }
 
     function testAttesterWalletDepositWithdraw() public {
