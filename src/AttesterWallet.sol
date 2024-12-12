@@ -27,17 +27,18 @@ contract AttesterWallet is IAttesterWallet, ERC20Upgradeable, AccessControlUpgra
     /// storing an attestation.
     ITrustedAttesters public trustedAttesters;
 
-    /// @notice A gas overhead amount which covers the cost for charging a user.
-    /// This is for protecting the attester against loss.
-    uint256 extraGasOverhead = 35000;
-
     constructor() {
         _disableInitializers();
     }
 
-    function initialize(ITrustedAttesters _trustedAttesters, address _defaultAdmin) public initializer {
+    function initialize(
+        ISecurityValidator _securityValidator,
+        ITrustedAttesters _trustedAttesters,
+        address _defaultAdmin
+    ) public initializer {
         __ERC20_init("Forta Attester Gas", "FORTAGAS");
         _grantRole(DEFAULT_ADMIN_ROLE, _defaultAdmin);
+        securityValidator = _securityValidator;
         trustedAttesters = _trustedAttesters;
     }
 
@@ -47,20 +48,6 @@ contract AttesterWallet is IAttesterWallet, ERC20Upgradeable, AccessControlUpgra
     modifier onlyTrustedAttester() {
         require(trustedAttesters.isTrustedAttester(msg.sender), "sender is not a trusted attester");
         _;
-    }
-
-    /**
-     * @notice Charges given beneficiary by using available balance. It first gets the initial gas
-     * available, then proceed with the modified function logic and finally deducts the spent amount.
-     * A predicted extra gas overhead is added for avoiding attester losses.
-     */
-    modifier chargeForAttestation(address beneficiary) {
-        uint256 initialGas = gasleft();
-        _;
-        uint256 spentAmount = initialGas - gasleft() + extraGasOverhead;
-        _burn(beneficiary, spentAmount);
-        (bool success,) = msg.sender.call{value: spentAmount}(""); // send funds to the attester EOA
-        if (!success) revert FailedToFundAttester();
     }
 
     /**
@@ -76,14 +63,6 @@ contract AttesterWallet is IAttesterWallet, ERC20Upgradeable, AccessControlUpgra
      */
     function setSecurityValidator(ISecurityValidator _securityValidator) public onlyRole(DEFAULT_ADMIN_ROLE) {
         securityValidator = _securityValidator;
-    }
-
-    /**
-     * @notice Sets the extra gas overhead.
-     * @param _extraGasOverhead Predicted extra gas overhead amount
-     */
-    function setExtraGasOverhead(uint256 _extraGasOverhead) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        extraGasOverhead = _extraGasOverhead;
     }
 
     /**
@@ -123,8 +102,14 @@ contract AttesterWallet is IAttesterWallet, ERC20Upgradeable, AccessControlUpgra
     function storeAttestationForOrigin(
         Attestation calldata attestation,
         bytes calldata attestationSignature,
-        address beneficiary
-    ) public onlyTrustedAttester chargeForAttestation(beneficiary) {
+        address beneficiary,
+        address chargeAccount,
+        uint256 chargeAmount
+    ) public onlyTrustedAttester {
         securityValidator.storeAttestationForOrigin(attestation, attestationSignature, beneficiary);
+        /// Burn from user balance and send user ETH to the attester EOA.
+        _burn(chargeAccount, chargeAmount);
+        (bool success,) = msg.sender.call{value: chargeAmount}("");
+        if (!success) revert FailedToFundAttester();
     }
 }
