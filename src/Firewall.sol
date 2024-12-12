@@ -178,7 +178,6 @@ abstract contract Firewall is IFirewall, IAttesterInfo, FirewallPermissions {
 
     function _secureExecution() internal virtual {
         Checkpoint memory checkpoint = _getFirewallStorage().checkpoints[msg.sig];
-        require(checkpoint.refEnd <= msg.data.length, "refEnd too large for slicing");
         /// Default to msg data length.
         uint256 refEnd = checkpoint.refEnd;
         if (refEnd > msg.data.length) refEnd = msg.data.length;
