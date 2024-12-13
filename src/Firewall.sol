@@ -186,11 +186,11 @@ abstract contract Firewall is IFirewall, IAttesterInfo, FirewallPermissions {
             _secureExecution(msg.sender, msg.sig, msg.value);
         } else if (refEnd - checkpoint.refStart > 32) {
             /// Support larger data ranges as direct input hashes instead of deriving a reference.
-            bytes calldata byteRange = msg.data[checkpoint.refStart:checkpoint.refEnd];
+            bytes calldata byteRange = msg.data[checkpoint.refStart:refEnd];
             bytes32 input = keccak256(byteRange);
             _secureExecution(msg.sender, msg.sig, input);
         } else {
-            bytes calldata byteRange = msg.data[checkpoint.refStart:checkpoint.refEnd];
+            bytes calldata byteRange = msg.data[checkpoint.refStart:refEnd];
             uint256 ref = uint256(bytes32(byteRange));
             _secureExecution(msg.sender, msg.sig, ref);
         }
@@ -205,7 +205,7 @@ abstract contract Firewall is IFirewall, IAttesterInfo, FirewallPermissions {
 
     function _secureExecution(address caller, bytes4 selector, bytes32 input) internal virtual {
         Checkpoint memory checkpoint = _getFirewallStorage().checkpoints[selector];
-        bool ok = _checkpointActivated(checkpoint);
+        bool ok = _checkpointActivated(checkpoint, caller, selector);
         if (ok) _executeCheckpoint(checkpoint, caller, input, selector);
     }
 
@@ -236,7 +236,7 @@ abstract contract Firewall is IFirewall, IAttesterInfo, FirewallPermissions {
     {
         ICheckpointHook checkpointHook = _getFirewallStorage().checkpointHook;
         if (address(checkpointHook) != address(0)) {
-            HookResult result = checkpointHook.handleCheckpoint(caller, selector, ref);
+            HookResult result = checkpointHook.handleCheckpointWithRef(caller, selector, ref);
             if (result == HookResult.ForceActivation) return (ref, true);
             if (result == HookResult.ForceDeactivation) return (ref, false);
             // Otherwise, just keep on with default checkpoint configuration and logic.
@@ -256,7 +256,18 @@ abstract contract Firewall is IFirewall, IAttesterInfo, FirewallPermissions {
         return (ref, acc >= checkpoint.threshold);
     }
 
-    function _checkpointActivated(Checkpoint memory checkpoint) internal pure virtual returns (bool) {
+    function _checkpointActivated(Checkpoint memory checkpoint, address caller, bytes4 selector)
+        internal
+        virtual
+        returns (bool)
+    {
+        ICheckpointHook checkpointHook = _getFirewallStorage().checkpointHook;
+        if (address(checkpointHook) != address(0)) {
+            HookResult result = checkpointHook.handleCheckpoint(caller, selector);
+            if (result == HookResult.ForceActivation) return true;
+            if (result == HookResult.ForceDeactivation) return false;
+            // Otherwise, just keep on with default checkpoint configuration and logic.
+        }
         if (checkpoint.activation == Activation.Inactive) return false;
         if (checkpoint.activation == Activation.AlwaysBlocked) revert CheckpointBlocked();
         if (checkpoint.activation == Activation.AlwaysActive) return true;

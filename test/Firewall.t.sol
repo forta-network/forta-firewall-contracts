@@ -180,7 +180,7 @@ contract FirewallTest is Test {
             )
         );
         bytes memory hookCall = abi.encodeWithSelector(
-            ICheckpointHook.handleCheckpoint.selector, address(this), FirewallImpl.secureExecution.selector, arg
+            ICheckpointHook.handleCheckpointWithRef.selector, address(this), FirewallImpl.secureExecution.selector, arg
         );
         mockCallsForSecureExecution(checkpointHash, hookCall);
         firewall.secureExecution(arg);
@@ -230,7 +230,10 @@ contract FirewallTest is Test {
             )
         );
         bytes memory hookCall = abi.encodeWithSelector(
-            ICheckpointHook.handleCheckpoint.selector, address(this), FirewallImpl.secureExecutionTwoArgs.selector, arg1
+            ICheckpointHook.handleCheckpointWithRef.selector,
+            address(this),
+            FirewallImpl.secureExecutionTwoArgs.selector,
+            arg1
         );
         mockCallsForSecureExecution(checkpointHash, hookCall);
         firewall.secureExecutionTwoArgs(arg1, arg2);
@@ -250,6 +253,11 @@ contract FirewallTest is Test {
         });
         firewall.setCheckpoint(FirewallImpl.secureExecutionTwoArgs.selector, chk);
         /// Should use a hash input instead of quantized reference.
+        /// The hook call should be different because of the missing ref:
+        /// There is no reference to rely on when the ref range is larger than 32 bytes.
+        hookCall = abi.encodeWithSelector(
+            ICheckpointHook.handleCheckpoint.selector, address(this), FirewallImpl.secureExecutionTwoArgs.selector
+        );
         bytes32 checkpointHashInput =
             keccak256(abi.encodeWithSelector(firewall.secureExecutionTwoArgs.selector, arg1, arg2));
         checkpointHash = keccak256(
@@ -274,7 +282,7 @@ contract FirewallTest is Test {
             trustedOrigin: false
         });
         firewall.setCheckpoint(FirewallImpl.secureExecutionTwoArgs.selector, chk);
-        // The checkpoint hash should be the same as before - reuse it in the mock call.
+        /// The checkpoint hash should be the same as before - reuse it in the mock call.
         mockCallsForSecureExecution(checkpointHash, hookCall);
         firewall.secureExecutionTwoArgs(arg1, arg2);
     }
@@ -315,7 +323,7 @@ contract FirewallTest is Test {
         vm.mockCall(
             address(mockHook),
             abi.encodeWithSelector(
-                ICheckpointHook.handleCheckpoint.selector,
+                ICheckpointHook.handleCheckpointWithRef.selector,
                 address(this),
                 FirewallImpl.secureExecutionWithRef.selector,
                 arg
@@ -359,7 +367,9 @@ contract FirewallTest is Test {
         );
         vm.mockCall(
             address(mockHook),
-            abi.encodeWithSelector(ICheckpointHook.handleCheckpoint.selector, address(this), bytes4(0xaaaaaaaa), arg),
+            abi.encodeWithSelector(
+                ICheckpointHook.handleCheckpointWithRef.selector, address(this), bytes4(0xaaaaaaaa), arg
+            ),
             abi.encode(HookResult.Inconclusive)
         );
         vm.mockCall(
@@ -403,7 +413,10 @@ contract FirewallTest is Test {
         vm.mockCall(
             address(mockHook),
             abi.encodeWithSelector(
-                ICheckpointHook.handleCheckpoint.selector, address(this), FirewallImpl.secureExecution.selector, arg
+                ICheckpointHook.handleCheckpointWithRef.selector,
+                address(this),
+                FirewallImpl.secureExecution.selector,
+                arg
             ),
             abi.encode(HookResult.ForceActivation)
         );
@@ -444,7 +457,10 @@ contract FirewallTest is Test {
         vm.mockCall(
             address(mockHook),
             abi.encodeWithSelector(
-                ICheckpointHook.handleCheckpoint.selector, address(this), FirewallImpl.secureExecution.selector, arg
+                ICheckpointHook.handleCheckpointWithRef.selector,
+                address(this),
+                FirewallImpl.secureExecution.selector,
+                arg
             ),
             abi.encode(HookResult.ForceDeactivation)
         );
@@ -481,7 +497,10 @@ contract FirewallTest is Test {
         vm.mockCall(
             address(mockHook),
             abi.encodeWithSelector(
-                ICheckpointHook.handleCheckpoint.selector, address(this), FirewallImpl.secureExecution.selector, arg
+                ICheckpointHook.handleCheckpointWithRef.selector,
+                address(this),
+                FirewallImpl.secureExecution.selector,
+                arg
             ),
             abi.encode(HookResult.Inconclusive)
         );
@@ -517,7 +536,10 @@ contract FirewallTest is Test {
         vm.mockCall(
             address(mockHook),
             abi.encodeWithSelector(
-                ICheckpointHook.handleCheckpoint.selector, address(this), FirewallImpl.secureExecution.selector, arg
+                ICheckpointHook.handleCheckpointWithRef.selector,
+                address(this),
+                FirewallImpl.secureExecution.selector,
+                arg
             ),
             abi.encode(HookResult.Inconclusive)
         );
