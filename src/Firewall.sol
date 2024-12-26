@@ -95,18 +95,9 @@ abstract contract Firewall is IFirewall, IAttesterInfo, FirewallPermissions {
      * @return firewallAccess The access control contract that knows the accounts which can manage
      * the settings of a firewall.
      */
-    function getFirewallConfig()
-        public
-        view
-        returns (
-            ISecurityValidator validator,
-            ICheckpointHook checkpointHook,
-            bytes32 attesterControllerId,
-            IFirewallAccess firewallAccess
-        )
-    {
+    function getFirewallConfig() public view returns (ISecurityValidator, ICheckpointHook, bytes32, IFirewallAccess) {
         FirewallStorage storage $ = _getFirewallStorage();
-        firewallAccess = _getFirewallAccess();
+        IFirewallAccess firewallAccess = _getFirewallAccess();
         return ($.validator, $.checkpointHook, $.attesterControllerId, firewallAccess);
     }
 
