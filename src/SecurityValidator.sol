@@ -35,6 +35,7 @@ contract SecurityValidator is ISecurityValidator, EIP712 {
     error AttestationNotFound();
     error EmptyAttestation();
     error UntrustedAttester(address currentAttester);
+    error ZeroOrigin();
 
     /**
      * @notice Transient storage slots used for storing the attestation values
@@ -100,6 +101,7 @@ contract SecurityValidator is ISecurityValidator, EIP712 {
         bytes calldata attestationSignature,
         address origin
     ) public onlyTrustedAttester {
+        if (origin == address(0)) revert ZeroOrigin();
         _storeAttestation(attestation, attestationSignature, origin);
     }
 
