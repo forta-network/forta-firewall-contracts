@@ -23,6 +23,7 @@ contract AttesterWallet is IAttesterWallet, ERC20Upgradeable, AccessControlUpgra
     error ZeroAmount();
     error FailedToWithdrawFunds();
     error FailedToFundAttester();
+    error UntrustedAttester(address attester);
 
     /// @notice The security validator singleton which keeps attestations.
     ISecurityValidator public securityValidator;
@@ -58,7 +59,7 @@ contract AttesterWallet is IAttesterWallet, ERC20Upgradeable, AccessControlUpgra
      * @notice Ensures that the sender is a trusted attester.
      */
     modifier onlyTrustedAttester() {
-        require(trustedAttesters.isTrustedAttester(msg.sender), "sender is not a trusted attester");
+        if (!trustedAttesters.isTrustedAttester(msg.sender)) revert UntrustedAttester(msg.sender);
         _;
     }
 

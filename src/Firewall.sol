@@ -31,6 +31,7 @@ abstract contract Firewall is IFirewall, IAttesterInfo, FirewallPermissions {
     error InvalidActivationType();
     error UntrustedAttester(address attester);
     error CheckpointBlocked();
+    error RefStartLargerThanEnd();
 
     struct FirewallStorage {
         ISecurityValidator validator;
@@ -135,7 +136,7 @@ abstract contract Firewall is IFirewall, IAttesterInfo, FirewallPermissions {
      * @param checkpoint Checkpoint data.
      */
     function setCheckpoint(bytes4 selector, Checkpoint memory checkpoint) public virtual onlyCheckpointManager {
-        require(checkpoint.refStart <= checkpoint.refEnd, "refStart is larger than refEnd");
+        if (checkpoint.refStart > checkpoint.refEnd) revert RefStartLargerThanEnd();
         _getFirewallStorage().checkpoints[selector] = checkpoint;
     }
 
