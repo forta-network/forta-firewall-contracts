@@ -55,7 +55,7 @@ contract SecurityValidator is ISecurityValidator, EIP712 {
      * @notice The large set of trusted attesters which can store attestations on behalf of other
      * transaction origin accounts.
      */
-    ITrustedAttesters trustedAttesters;
+    ITrustedAttesters public trustedAttesters;
 
     /**
      * @notice A mapping from transaction senders to first execution hashes and to attestations.
