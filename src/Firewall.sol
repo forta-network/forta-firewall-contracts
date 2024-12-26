@@ -122,6 +122,7 @@ abstract contract Firewall is IFirewall, IAttesterInfo, FirewallPermissions {
 
     /**
      * @notice Returns the attester controller id from the configuration.
+     * @return Attester controller ID
      */
     function getAttesterControllerId() public view returns (bytes32) {
         return _getFirewallStorage().attesterControllerId;
@@ -150,6 +151,11 @@ abstract contract Firewall is IFirewall, IAttesterInfo, FirewallPermissions {
     /**
      * @notice Gets the checkpoint values for given function selector.
      * @param selector Selector of the function.
+     * @return Checkpoint threshold
+     * @return Checkpoint reference start
+     * @return Checkpoint reference end
+     * @return Checkpoint activation mode
+     * @return Checkpoint trusted origin mode enablement state
      */
     function getCheckpoint(bytes4 selector) public view virtual returns (uint192, uint16, uint16, Activation, bool) {
         Checkpoint storage checkpoint = _getFirewallStorage().checkpoints[selector];

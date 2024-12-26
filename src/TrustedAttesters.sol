@@ -23,6 +23,7 @@ contract TrustedAttesters is AccessControl, ITrustedAttesters {
     /**
      * @notice Checks if the given address is a trusted attester.
      * @param caller Caller address.
+     * @return Boolean result
      */
     function isTrustedAttester(address caller) public view returns (bool) {
         return hasRole(TRUSTED_ATTESTER_ROLE, caller);

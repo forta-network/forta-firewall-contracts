@@ -124,7 +124,10 @@ contract SecurityValidator is ISecurityValidator, EIP712 {
         _initAttestation(attestation, attester);
     }
 
-    /// @notice Returns the attester address which attested to the current execution
+    /**
+     * @notice Returns the attester address which attested to the current execution
+     * @return The attester of the currently consumed attestation.
+     */
     function getCurrentAttester() public view returns (address) {
         return TransientSlot.tload(ATTESTER_SLOT.asAddress());
     }
@@ -132,6 +135,7 @@ contract SecurityValidator is ISecurityValidator, EIP712 {
     /**
      * @notice Produces the EIP-712 hash of the attestation message.
      * @param attestation The set of fields that correspond to and enable the execution of call(s)
+     * @return Hash of attestation
      */
     function hashAttestation(Attestation calldata attestation) public view returns (bytes32) {
         return _hashTypedDataV4(
@@ -152,6 +156,8 @@ contract SecurityValidator is ISecurityValidator, EIP712 {
      *
      * @param checkpointHash An arbitrary hash which can be computed by using variety of values
      * that occur during a call
+     * @return Execution hash value, produced from current checkpoint hash, msg.sender and
+     * previous execution hash
      */
     function executeCheckpoint(bytes32 checkpointHash) public returns (bytes32) {
         bytes32 executionHash = TransientSlot.tload(HASH_SLOT.asBytes32());
@@ -265,6 +271,7 @@ contract SecurityValidator is ISecurityValidator, EIP712 {
      * that occur during a call
      * @param caller msg.sender of executeCheckpoint() call
      * @param executionHash Previous execution hash
+     * @return Execution hash
      */
     function executionHashFrom(bytes32 checkpointHash, address caller, bytes32 executionHash)
         public
