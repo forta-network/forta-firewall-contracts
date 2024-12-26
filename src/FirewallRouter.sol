@@ -61,4 +61,12 @@ contract FirewallRouter is IExternalFirewall, FirewallPermissions {
     function updateFirewall(IExternalFirewall newFirewall) public onlyFirewallAdmin {
         firewall = newFirewall;
     }
+
+    /**
+     * @notice Updates the firewall access contract address.
+     * @param newFirewallAccess New firewall access contract address.
+     */
+    function updateFirewallAccess(IFirewallAccess newFirewallAccess) public onlyFirewallAdmin {
+        _updateFirewallAccess(newFirewallAccess);
+    }
 }
