@@ -31,6 +31,12 @@ contract AttesterWallet is IAttesterWallet, ERC20Upgradeable, AccessControlUpgra
         _disableInitializers();
     }
 
+    /**
+     * @notice Initializes proxy storage with values.
+     * @param _securityValidator Security validator singleton contract.
+     * @param _trustedAttesters A registry of trusted attesters.
+     * @param _defaultAdmin Initial admin of the wallet.
+     */
     function initialize(
         ISecurityValidator _securityValidator,
         ITrustedAttesters _trustedAttesters,

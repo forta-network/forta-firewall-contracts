@@ -12,6 +12,7 @@ import "./FirewallPermissions.sol";
  * @notice This contract provides external firewall upgradeability.
  */
 contract FirewallRouter is IExternalFirewall, FirewallPermissions {
+    /// @notice External firewall address.
     IExternalFirewall public firewall;
 
     constructor(IExternalFirewall _firewall, IFirewallAccess _firewallAccess) {
@@ -51,6 +52,10 @@ contract FirewallRouter is IExternalFirewall, FirewallPermissions {
         firewall.saveAttestation(attestation, attestationSignature);
     }
 
+    /**
+     * @notice Updates the external firewall address.
+     * @param newFirewall New external firewall address.
+     */
     function updateFirewall(IExternalFirewall newFirewall) public onlyFirewallAdmin {
         firewall = newFirewall;
     }
