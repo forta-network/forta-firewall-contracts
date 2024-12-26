@@ -20,6 +20,7 @@ contract AttesterWallet is IAttesterWallet, ERC20Upgradeable, AccessControlUpgra
     error ZeroChargeAccount();
     error ZeroSecurityValidator();
     error ZeroTrustedAttesters();
+    error ZeroAmount();
     error FailedToWithdrawFunds();
     error FailedToFundAttester();
 
@@ -65,6 +66,7 @@ contract AttesterWallet is IAttesterWallet, ERC20Upgradeable, AccessControlUpgra
      * @notice Direct native currency transfers are registered to the balance of the sender.
      */
     receive() external payable {
+        if (msg.value == 0) revert ZeroAmount();
         _mint(msg.sender, msg.value);
     }
 
@@ -83,6 +85,7 @@ contract AttesterWallet is IAttesterWallet, ERC20Upgradeable, AccessControlUpgra
      */
     function deposit(address beneficiary) public payable {
         if (beneficiary == address(0)) revert ZeroBeneficiary();
+        if (msg.value == 0) revert ZeroAmount();
         _mint(beneficiary, msg.value);
     }
 
@@ -93,6 +96,7 @@ contract AttesterWallet is IAttesterWallet, ERC20Upgradeable, AccessControlUpgra
      */
     function withdraw(uint256 amount, address beneficiary) public {
         if (beneficiary == address(0)) revert ZeroBeneficiary();
+        if (amount == 0) revert ZeroAmount();
         _burn(msg.sender, amount);
         (bool success,) = beneficiary.call{value: amount}(""); // send funds to msg.sender
         if (!success) revert FailedToWithdrawFunds();
@@ -104,7 +108,9 @@ contract AttesterWallet is IAttesterWallet, ERC20Upgradeable, AccessControlUpgra
      */
     function withdrawAll(address beneficiary) public {
         if (beneficiary == address(0)) revert ZeroBeneficiary();
-        withdraw(balanceOf(msg.sender), beneficiary);
+        uint256 currBalance = balanceOf(msg.sender);
+        if (currBalance == 0) revert ZeroAmount();
+        withdraw(currBalance, beneficiary);
     }
 
     /**
@@ -125,6 +131,7 @@ contract AttesterWallet is IAttesterWallet, ERC20Upgradeable, AccessControlUpgra
     ) public onlyTrustedAttester {
         if (beneficiary == address(0)) revert ZeroBeneficiary();
         if (chargeAccount == address(0)) revert ZeroChargeAccount();
+        if (chargeAmount == 0) revert ZeroAmount();
         securityValidator.storeAttestationForOrigin(attestation, attestationSignature, beneficiary);
         /// Burn from user balance and send user ETH to the attester EOA.
         _burn(chargeAccount, chargeAmount);
