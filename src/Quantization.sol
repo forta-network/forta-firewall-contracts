@@ -19,6 +19,6 @@ library Quantization {
      */
     function quantize(uint256 n) public pure returns (uint256) {
         uint256 offset = 8 * Math.log256(n);
-        return ((n >> offset) << offset) + (2 ** offset) - 1;
+        return ((n >> offset) << offset) + (2 ** offset - 1);
     }
 }
