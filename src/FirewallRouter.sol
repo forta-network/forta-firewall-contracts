@@ -23,6 +23,7 @@ contract FirewallRouter is IExternalFirewall, FirewallPermissions {
     /**
      * @notice Allows executing checkpoints externally from an integrator contract. The selector
      * is checked against the checkpoints configured on this contract.
+     * @param caller The caller observed by the checkpoint executor (protected) contract
      * @param selector Selector of the function which the checkpoint is configured and executed for
      * @param ref The reference number to compare with the threshold
      */
@@ -33,6 +34,7 @@ contract FirewallRouter is IExternalFirewall, FirewallPermissions {
     /**
      * @notice Allows executing checkpoints externally from an integrator contract. The selector
      * is checked against the checkpoints configured on this contract.
+     * @param caller The caller observed by the checkpoint executor (protected) contract
      * @param selector Selector of the function which the checkpoint is configured and executed for
      * @param input The input value to use in checkpoint hash computation
      */

@@ -52,6 +52,7 @@ abstract contract CheckpointExecutor {
      * @param attestation The set of fields that correspond to and enable the execution of call(s)
      * @param attestationSignature Signature of EIP-712 message
      * @param data Call data which contains the function selector and the encoded arguments
+     * @return Call return value.
      */
     function attestedCall(Attestation calldata attestation, bytes calldata attestationSignature, bytes calldata data)
         public

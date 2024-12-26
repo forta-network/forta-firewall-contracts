@@ -88,6 +88,8 @@ contract AttesterWallet is IAttesterWallet, ERC20Upgradeable, AccessControlUpgra
 
     /**
      * @notice Withdraws balance back to sender.
+     * @param amount Withdrawn amount.
+     * @param beneficiary Beneficiary of the withdrawal.
      */
     function withdraw(uint256 amount, address beneficiary) public {
         if (beneficiary == address(0)) revert ZeroBeneficiary();
@@ -98,6 +100,7 @@ contract AttesterWallet is IAttesterWallet, ERC20Upgradeable, AccessControlUpgra
 
     /**
      * @notice Withdraws all balance back to sender.
+     * @param beneficiary Beneficiary of the withdrawal.
      */
     function withdrawAll(address beneficiary) public {
         if (beneficiary == address(0)) revert ZeroBeneficiary();
@@ -110,6 +113,8 @@ contract AttesterWallet is IAttesterWallet, ERC20Upgradeable, AccessControlUpgra
      * @param attestation The set of fields that correspond to and enable the execution of call(s)
      * @param attestationSignature Signature of EIP-712 message
      * @param beneficiary The tx.origin which will benefit from this attestation
+     * @param chargeAccount The account charged for this attestation transaction.
+     * @param chargeAmount The amount which the charged account is charged for this attestation transaction.
      */
     function storeAttestationForOrigin(
         Attestation calldata attestation,
