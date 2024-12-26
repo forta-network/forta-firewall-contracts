@@ -17,6 +17,9 @@ import {IAttesterWallet} from "./interfaces/IAttesterWallet.sol";
  */
 contract AttesterWallet is IAttesterWallet, ERC20Upgradeable, AccessControlUpgradeable {
     error ZeroBeneficiary();
+    error ZeroChargeAccount();
+    error ZeroSecurityValidator();
+    error ZeroTrustedAttesters();
     error FailedToWithdrawFunds();
     error FailedToFundAttester();
 
@@ -44,7 +47,9 @@ contract AttesterWallet is IAttesterWallet, ERC20Upgradeable, AccessControlUpgra
     ) public initializer {
         __ERC20_init("Forta Attester Gas", "FORTAGAS");
         _grantRole(DEFAULT_ADMIN_ROLE, _defaultAdmin);
+        if (address(_securityValidator) == address(0)) revert ZeroSecurityValidator();
         securityValidator = _securityValidator;
+        if (address(_trustedAttesters) == address(0)) revert ZeroTrustedAttesters();
         trustedAttesters = _trustedAttesters;
     }
 
@@ -68,6 +73,7 @@ contract AttesterWallet is IAttesterWallet, ERC20Upgradeable, AccessControlUpgra
      * @param _securityValidator Security validator address
      */
     function setSecurityValidator(ISecurityValidator _securityValidator) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (address(_securityValidator) == address(0)) revert ZeroSecurityValidator();
         securityValidator = _securityValidator;
     }
 
@@ -112,6 +118,8 @@ contract AttesterWallet is IAttesterWallet, ERC20Upgradeable, AccessControlUpgra
         address chargeAccount,
         uint256 chargeAmount
     ) public onlyTrustedAttester {
+        if (beneficiary == address(0)) revert ZeroBeneficiary();
+        if (chargeAccount == address(0)) revert ZeroChargeAccount();
         securityValidator.storeAttestationForOrigin(attestation, attestationSignature, beneficiary);
         /// Burn from user balance and send user ETH to the attester EOA.
         _burn(chargeAccount, chargeAmount);
