@@ -10,18 +10,34 @@ import "./Activation.sol";
  * does security checks before proceeding with the rest of the execution.
  */
 struct Checkpoint {
-    /// @notice The value to compare against an incoming function argument.
+    /// @notice The value to compare against an unsigned integer value from an incoming function argument.
     uint192 threshold;
     /**
      * @notice Defines the expected start position of the incoming argument in the call data.
      * This is needed in some integration cases when the reference is found directly from call data
      * bytes.
+     *
+     * If the selected range is 32 bytes, then the byte range is called a reference and is treated
+     * as an unsigned integer value which is compared with the threshold. Please note that using
+     * negative signed integer values as references can cause unexpected behavior when compared
+     * with the threshold value and working with negative reference values is discouraged.
+     *
+     * If the range is larger than 32 bytes, then the comparison with threshold value is skipped
+     * and a hash of the bytes is used in checkpoint hash computation.
      */
     uint16 refStart;
     /**
      * @notice Defines the expected end position of the incoming argument in the call data.
      * This is needed in some integration cases when the reference is found directly from call data
      * bytes.
+     *
+     * If the selected range is 32 bytes, then the byte range is called a reference and is treated
+     * as an unsigned integer value which is compared with the threshold. Please note that using
+     * negative signed integer values as references can cause unexpected behavior when compared
+     * with the threshold value and working with negative reference values is discouraged.
+     *
+     * If the range is larger than 32 bytes, then the comparison with threshold value is skipped
+     * and a hash of the bytes is used in checkpoint hash computation.
      */
     uint16 refEnd;
     /**
