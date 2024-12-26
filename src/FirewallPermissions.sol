@@ -10,6 +10,12 @@ import "./interfaces/ITrustedAttesters.sol";
  * @notice Simplifies interactions with a firewall access contract.
  */
 abstract contract FirewallPermissions {
+    error CallerNotFirewallAdmin(address caller);
+    error CallerNotCheckpointManager(address caller);
+    error CallerNotLogicUpgrader(address caller);
+    error CallerNotCheckpointExecutor(address caller);
+    error ZeroFirewallAccess();
+
     struct FirewallPermissionsStorage {
         IFirewallAccess firewallAccess;
         ITrustedAttesters trustedAttesters;
@@ -19,37 +25,35 @@ abstract contract FirewallPermissions {
     bytes32 private constant STORAGE_SLOT = 0x5a36dfc2750cc10abe5f95f24b6fce874396e21527ff7f50fb33b5ccc8b7d500;
 
     modifier onlyFirewallAdmin() {
-        require(
-            _getFirewallPermissionsStorage().firewallAccess.isFirewallAdmin(msg.sender), "caller is not firewall admin"
-        );
+        if (!_getFirewallPermissionsStorage().firewallAccess.isFirewallAdmin(msg.sender)) {
+            revert CallerNotFirewallAdmin(msg.sender);
+        }
         _;
     }
 
     modifier onlyCheckpointManager() {
-        require(
-            _getFirewallPermissionsStorage().firewallAccess.isCheckpointManager(msg.sender),
-            "caller is not checkpoint manager"
-        );
+        if (!_getFirewallPermissionsStorage().firewallAccess.isCheckpointManager(msg.sender)) {
+            revert CallerNotCheckpointManager(msg.sender);
+        }
         _;
     }
 
     modifier onlyLogicUpgrader() {
-        require(
-            _getFirewallPermissionsStorage().firewallAccess.isLogicUpgrader(msg.sender), "caller is not logic upgrader"
-        );
+        if (!_getFirewallPermissionsStorage().firewallAccess.isLogicUpgrader(msg.sender)) {
+            revert CallerNotLogicUpgrader(msg.sender);
+        }
         _;
     }
 
     modifier onlyCheckpointExecutor() {
-        require(
-            _getFirewallPermissionsStorage().firewallAccess.isCheckpointExecutor(msg.sender),
-            "caller is not checkpoint executor"
-        );
+        if (!_getFirewallPermissionsStorage().firewallAccess.isCheckpointExecutor(msg.sender)) {
+            revert CallerNotCheckpointExecutor(msg.sender);
+        }
         _;
     }
 
     function _updateFirewallAccess(IFirewallAccess firewallAccess) internal {
-        require(address(firewallAccess) != address(0), "new firewall access contract cannot be zero address");
+        if (address(firewallAccess) == address(0)) revert ZeroFirewallAccess();
         _getFirewallPermissionsStorage().firewallAccess = firewallAccess;
     }
 
