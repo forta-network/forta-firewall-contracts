@@ -56,6 +56,7 @@ abstract contract CheckpointExecutor {
      */
     function attestedCall(Attestation calldata attestation, bytes calldata attestationSignature, bytes calldata data)
         public
+        payable
         returns (bytes memory)
     {
         _getCheckpointExecutorStorage().externalFirewall.saveAttestation(attestation, attestationSignature);

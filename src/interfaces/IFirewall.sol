@@ -42,5 +42,6 @@ interface IFirewall {
 
     function attestedCall(Attestation calldata attestation, bytes calldata attestationSignature, bytes calldata data)
         external
+        payable
         returns (bytes memory);
 }

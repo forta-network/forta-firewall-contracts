@@ -168,6 +168,7 @@ abstract contract Firewall is IFirewall, IAttesterInfo, FirewallPermissions {
      */
     function attestedCall(Attestation calldata attestation, bytes calldata attestationSignature, bytes calldata data)
         public
+        payable
         returns (bytes memory)
     {
         _getFirewallStorage().validator.saveAttestation(attestation, attestationSignature);
