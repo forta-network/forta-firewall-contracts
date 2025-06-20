@@ -16,6 +16,10 @@ deploy-firewall:
 deploy-validator:
 	forge script --rpc-url deploy --broadcast ./script/SecurityValidatorDeployer.s.sol
 
+.PHONY: deploy-proxy-firewall
+deploy-proxy-firewall:
+	forge script --rpc-url deploy --broadcast ./script/ProxyFirewallDeployer.s.sol
+
 .PHONY: gas
 gas:
 	forge test --match-test attestationGas -vvvv
