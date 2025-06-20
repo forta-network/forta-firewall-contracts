@@ -269,9 +269,15 @@ abstract contract Firewall is IFirewall, IAttesterInfo, FirewallPermissions {
     {
         ICheckpointHook checkpointHook = _getFirewallStorage().checkpointHook;
         if (address(checkpointHook) != address(0)) {
-            HookResult result = checkpointHook.handleCheckpoint(caller, selector);
+            HookResult result;
+            if (checkpoint.activation == Activation.HookControlled) {
+                result = checkpointHook.handleCheckpointWithCallData(caller, selector, msg.data);
+            } else {
+                result = checkpointHook.handleCheckpoint(caller, selector);
+            }
             if (result == HookResult.ForceActivation) return true;
             if (result == HookResult.ForceDeactivation) return false;
+            if (result == HookResult.Block) revert CheckpointBlockedByHook();
             // Otherwise, just keep on with default checkpoint configuration and logic.
         }
         if (checkpoint.activation == Activation.Inactive) return false;
