@@ -14,5 +14,7 @@ enum Activation {
     /// @notice Security checks are only required if a specific function argument exceeds the threshold.
     ConstantThreshold,
     /// @notice For adding up all intercepted values by the same checkpoint before comparing with the threshold.
-    AccumulatedThreshold
+    AccumulatedThreshold,
+    /// @notice For setting up hook controlled checkpoints.
+    HookControlled
 }
