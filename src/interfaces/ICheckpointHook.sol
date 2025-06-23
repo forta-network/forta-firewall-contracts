@@ -42,9 +42,10 @@ interface ICheckpointHook {
     function handleCheckpointWithRef(address caller, bytes4 selector, uint256 ref) external view returns (HookResult);
     /**
      * @notice Called by a firewall when the address is configured in settings and the checkpoint
-     * is based on a hash of the call data.
+     * is a hook controlled one.
      * @param caller The caller observed and reported by the firewall.
      * @param selector The function selector which the checkpoint is configured for.
+     * @param data Intercepted call data.
      */
     function handleCheckpointWithCallData(address caller, bytes4 selector, bytes calldata data) external view returns (HookResult);
 }
